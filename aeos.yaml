@@ -1,0 +1,16 @@
+aeos:
+  specification: "AEOS"
+  version: "0.1"
+  manifest_version: "0.1"
+project:
+  id: "AEOS-CLI"
+  name: "aeos-cli"
+  version: "0.0.1"
+  stage: "development"
+  level: "B"
+  security_level: "S2"
+classification:
+  default_data: "internal"
+security:
+  secret_scan:
+    required: true

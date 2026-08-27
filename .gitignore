@@ -1,0 +1,5 @@
+/aeos
+/.aeos/
+.env
+.DS_Store
+bin/

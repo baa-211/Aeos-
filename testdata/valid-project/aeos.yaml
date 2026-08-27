@@ -1,0 +1,11 @@
+aeos:
+  specification: "AEOS"
+  version: "0.1"
+  manifest_version: "0.1"
+project:
+  id: "VALID"
+  name: "valid-project"
+  version: "0.0.1"
+  stage: "development"
+  level: "B"
+  security_level: "S2"
