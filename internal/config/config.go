@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -79,6 +80,18 @@ func Load(root string) (Manifest, string, error) {
 			}
 			section = strings.TrimSuffix(trimmed, ":")
 			subsection = ""
+			if !knownSections[section] {
+				// A silently ignored section is a security hazard, not a
+				// convenience. Mistyping `security` as `securty` would
+				// otherwise disable secret scanning while AEOS still reported
+				// PASS: a false green in the exact place the tool exists to
+				// prevent one.
+				msg := fmt.Sprintf("unknown top-level section %q (known: %s)", section, knownSectionList())
+				if suggestion := closestSection(section); suggestion != "" {
+					msg += fmt.Sprintf("; did you mean %q?", suggestion)
+				}
+				return Manifest{}, path, invalid(lineNo, msg)
+			}
 			if section != "aeos" && section != "project" && section != "security" {
 				section = "_ignored"
 			}
@@ -212,4 +225,71 @@ func oneOf(value string, allowed ...string) bool {
 		}
 	}
 	return false
+}
+
+// knownSections is the closed set of top-level manifest sections recognized by
+// the AEOS v0.1 manifest subset. `classification` is parsed by no field yet but
+// is a declared part of the specification, so it is accepted and ignored rather
+// than rejected.
+var knownSections = map[string]bool{
+	"aeos":           true,
+	"project":        true,
+	"security":       true,
+	"classification": true,
+}
+
+func knownSectionList() string {
+	names := make([]string, 0, len(knownSections))
+	for name := range knownSections {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
+}
+
+// closestSection returns a known section name within a small edit distance of
+// the given name, so that a typo reports what was probably intended rather than
+// only that something was wrong.
+func closestSection(name string) string {
+	best := ""
+	bestDistance := 3 // only suggest genuinely near misses
+	for candidate := range knownSections {
+		d := editDistance(strings.ToLower(name), candidate)
+		if d < bestDistance || (d == bestDistance && candidate < best) {
+			best, bestDistance = candidate, d
+		}
+	}
+	return best
+}
+
+// editDistance is the Levenshtein distance between a and b.
+func editDistance(a, b string) int {
+	ar, br := []rune(a), []rune(b)
+	prev := make([]int, len(br)+1)
+	curr := make([]int, len(br)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+	for i := 1; i <= len(ar); i++ {
+		curr[0] = i
+		for j := 1; j <= len(br); j++ {
+			cost := 1
+			if ar[i-1] == br[j-1] {
+				cost = 0
+			}
+			curr[j] = min3(curr[j-1]+1, prev[j]+1, prev[j-1]+cost)
+		}
+		prev, curr = curr, prev
+	}
+	return prev[len(br)]
+}
+
+func min3(a, b, c int) int {
+	if b < a {
+		a = b
+	}
+	if c < a {
+		a = c
+	}
+	return a
 }
