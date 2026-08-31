@@ -1,7 +1,7 @@
 ---
 aeos_record: STATUS
-updated: 2026-08-26
-version: "0.1.1-rc"
+updated: 2026-08-31
+version: "0.0.8"
 environment: development
 ---
 
@@ -44,9 +44,14 @@ When the target is a Git repository, secret scanning uses both current-directory
 5. Scope drift remains a larger project risk than missing non-critical features before v0.1.
 
 ## Open M6 Gaps
-1. `REQ-CLI-006` STATUS staleness remains unimplemented; freshness configuration must be built before detection.
-2. The JSON report exposes no record index, so the Preview UI cannot render pipeline stages from AEOS truth without parsing records itself and becoming a second source of truth.
-3. Stage gate enforcement — refusing to report readiness when a required stage record is missing or stale — needs new code and is scheduled behind the two items above.
+1. `REQ-CLI-006` STATUS staleness remains unimplemented; freshness configuration must be built before detection. This is now the single remaining M6 blocker.
+2. Stage gate enforcement — refusing to report readiness when a required stage record is missing or stale — needs new code and is scheduled behind item 1, which supplies the freshness mechanism it depends on.
+3. The CLI has no `--version` flag; the binary cannot report what it is.
+
+## Closed M6 Gaps
+- Record index in the JSON report — closed by CHG-020, schema 0.2.
+- Version drift across manifest and records — closed by CHG-021, enforced by `AEOS-VER-001`.
+- No versioning policy or changelog — closed by CHG-022.
 
 ## Priority
 Preserve the M5→M8 trust-engine critical path while allowing the new Preview/UI direction to prototype in an isolated, non-authoritative track that consumes the same AEOS truth model.

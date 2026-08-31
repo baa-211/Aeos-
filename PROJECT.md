@@ -5,9 +5,9 @@ aeos_version: "0.1"
 project_level: B
 security_level: S2
 status: development
-version: "0.0.7"
+version: "0.0.8"
 created: 2026-08-15
-updated: 2026-08-26
+updated: 2026-08-31
 ---
 
 # AEOS CLI

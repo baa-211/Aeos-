@@ -1,10 +1,10 @@
 ---
 aeos_record: REQ
 id: REQ-CLI-012
-status: implemented_pending_live_verification
+status: implemented
 priority: critical
 created: 2026-08-16
-updated: 2026-08-26
+updated: 2026-08-31
 related_adrs:
   - ADR-003
 ---
@@ -25,7 +25,9 @@ When `security.secret_scan.required` is true, `aeos check` shall run the approve
 - [x] Adapter behavior is covered with controlled executable fixtures.
 - [x] Current working/untracked project content is scanned.
 - [x] Git history is additionally scanned when the target is a Git repository.
-- [ ] A real pinned Gitleaks binary has completed the smoke test in the active remote CI environment.
+- [x] A real pinned Gitleaks binary has completed the smoke test in the active remote CI environment.
 
 ## Current Verification State
-Code-level integration is complete. Live scanner verification still requires the separate AEOS GitHub repository to be published and the prepared CI workflow to complete successfully with the pinned scanner.
+Complete. Live verification was obtained on 2026-08-31 by GitHub Actions run #4 on `baa-211/Aeos-`, which completed with conclusion `success` across all fourteen steps.
+
+The run installed checksum-verified Gitleaks 8.30.0, asserted the reported version against the ADR-003 pin, detected a runtime-generated private key as a blocking `AEOS-SEC-001` with exit code 3 and no raw key material in the report, and confirmed exit 0 once the key was removed. Local verification additionally confirmed detection through Git history of a secret committed and then deleted from the working tree, and that an absent scanner blocks with `AEOS-SEC-010` rather than passing.

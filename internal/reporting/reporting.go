@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/baa-211/Aeos-/internal/findings"
 )
 
-const SchemaVersion = "0.1"
+// SchemaVersion is the version of the report contract itself, not of AEOS.
+// Consumers must gate on this rather than on the tool version.
+const SchemaVersion = "0.2"
 
 type Project struct {
 	ID            string `json:"id,omitempty"`
@@ -26,22 +29,53 @@ type Summary struct {
 	Critical          int `json:"critical"`
 }
 
+// Record is the report-facing view of a discovered AEOS record. It exists so
+// that consumers such as the preview interface can render the record graph from
+// the report itself rather than parsing the repository independently, which
+// would make them a second source of truth.
+type Record struct {
+	Type       string   `json:"type"`
+	ID         string   `json:"id"`
+	Status     string   `json:"status,omitempty"`
+	Path       string   `json:"path"`
+	References []string `json:"references,omitempty"`
+}
+
 type Report struct {
 	SchemaVersion string             `json:"schema_version"`
 	Project       Project            `json:"project"`
 	ManifestPath  string             `json:"manifest_path,omitempty"`
 	Summary       Summary            `json:"summary"`
+	Records       []Record           `json:"records"`
 	Findings      []findings.Finding `json:"findings"`
 	Result        string             `json:"result"`
 }
 
-func New(project Project, manifestPath string, records int, fs []findings.Finding) Report {
+// SortRecords orders records deterministically by type, then identifier, then
+// path, so that two runs over the same project produce identical output.
+func SortRecords(rs []Record) {
+	sort.Slice(rs, func(i, j int) bool {
+		a, b := rs[i], rs[j]
+		if a.Type != b.Type {
+			return a.Type < b.Type
+		}
+		if a.ID != b.ID {
+			return a.ID < b.ID
+		}
+		return a.Path < b.Path
+	})
+}
+
+func New(project Project, manifestPath string, recs []Record, fs []findings.Finding) Report {
 	findings.Sort(fs)
+	indexed := append([]Record{}, recs...)
+	SortRecords(indexed)
 	r := Report{
 		SchemaVersion: SchemaVersion,
 		Project:       project,
 		ManifestPath:  manifestPath,
-		Summary:       Summary{RecordsDiscovered: records},
+		Summary:       Summary{RecordsDiscovered: len(indexed)},
+		Records:       indexed,
 		Findings:      append([]findings.Finding{}, fs...),
 		Result:        "PASS",
 	}

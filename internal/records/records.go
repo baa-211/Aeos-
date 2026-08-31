@@ -30,6 +30,7 @@ type Record struct {
 	Type       string
 	ID         string
 	Status     string
+	Version    string
 	Path       string
 	References []string
 }
@@ -227,7 +228,7 @@ func parseFrontmatter(r io.Reader) (Record, bool, error) {
 	}
 	refs = uniqueSorted(refs)
 
-	return Record{Type: recordType, ID: id, Status: values["status"], References: refs}, true, nil
+	return Record{Type: recordType, ID: id, Status: values["status"], Version: values["version"], References: refs}, true, nil
 }
 
 func isReferenceKey(key string) bool {

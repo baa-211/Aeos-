@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/baa-211/Aeos-/internal/config"
 	"github.com/baa-211/Aeos-/internal/findings"
@@ -77,7 +79,7 @@ func check(root string) (reporting.Report, int) {
 			f.RecommendedAction = "inspect filesystem access and rerun the validator"
 			exit = exitInternal
 		}
-		return reporting.New(reporting.Project{}, config.ManifestName, 0, []findings.Finding{f}), exit
+		return reporting.New(reporting.Project{}, config.ManifestName, nil, []findings.Finding{f}), exit
 	}
 
 	project := reporting.Project{ID: manifest.Project.ID, Name: manifest.Project.Name, Level: manifest.Project.Level, SecurityLevel: manifest.Project.SecurityLevel}
@@ -95,10 +97,11 @@ func check(root string) (reporting.Report, int) {
 			f.RecommendedAction = "inspect repository filesystem access and rerun the validator"
 			exit = exitInternal
 		}
-		return reporting.New(project, config.ManifestName, 0, []findings.Finding{f}), exit
+		return reporting.New(project, config.ManifestName, nil, []findings.Finding{f}), exit
 	}
 
 	fs := validation.Validate(root, manifest, discovered)
+	fs = append(fs, validation.VersionConsistency(manifest.Project.Version, discovered)...)
 	if manifest.Security.SecretScanRequired {
 		secretFindings, scanErr := secrets.Scan(root, os.Getenv("AEOS_GITLEAKS_PATH"))
 		if scanErr != nil {
@@ -122,7 +125,7 @@ func check(root string) (reporting.Report, int) {
 			fs = append(fs, secretFindings...)
 		}
 	}
-	report := reporting.New(project, config.ManifestName, len(discovered), fs)
+	report := reporting.New(project, config.ManifestName, reportRecords(root, discovered), fs)
 	if report.Summary.Critical > 0 {
 		return report, exitCritical
 	}
@@ -137,4 +140,26 @@ func writeReport(w io.Writer, format string, report reporting.Report) error {
 		return reporting.JSON(w, report)
 	}
 	return reporting.Console(w, report)
+}
+
+// reportRecords converts discovered records into the report-facing view.
+// Paths are normalized to project-relative form for the same reason scanner
+// paths are: a report containing machine-specific absolute paths is not
+// reproducible across machines.
+func reportRecords(root string, discovered []records.Record) []reporting.Record {
+	out := make([]reporting.Record, 0, len(discovered))
+	for _, rec := range discovered {
+		path := rec.Path
+		if rel, err := filepath.Rel(root, path); err == nil && !strings.HasPrefix(rel, "..") {
+			path = rel
+		}
+		out = append(out, reporting.Record{
+			Type:       rec.Type,
+			ID:         rec.ID,
+			Status:     rec.Status,
+			Path:       filepath.ToSlash(path),
+			References: rec.References,
+		})
+	}
+	return out
 }

@@ -5,7 +5,7 @@ aeos:
 project:
   id: "AEOS-CLI"
   name: "aeos-cli"
-  version: "0.0.1"
+  version: "0.0.8"
   stage: "development"
   level: "B"
   security_level: "S2"

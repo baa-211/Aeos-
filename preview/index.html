@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEOS — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Spectral:wght@300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --marble:#EDE7DC; --marble-lit:#FBF7F0; --marble-deep:#CFC5B4;
+  --ink:#2E2A24; --ink-soft:#6B6355;
+  --gilt:#C9A227; --gilt-warm:#E3C25F;
+  --moss:#6B7A5A; --oxide:#8C3A22; --amber:#B07D2B;
+  --rule:rgba(46,42,36,.14);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;background:var(--marble);color:var(--ink);
+  font-family:"Spectral",Georgia,serif;font-weight:300;-webkit-font-smoothing:antialiased;
+}
+.chamber{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(120% 80% at 50% -15%,var(--marble-lit) 0%,rgba(251,247,240,0) 60%),
+  radial-gradient(60% 45% at 10% 5%,rgba(227,194,95,.16) 0%,rgba(227,194,95,0) 60%),
+  linear-gradient(179deg,var(--marble) 0%,var(--marble-deep) 100%);}
+.veining{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.26;mix-blend-mode:multiply}
+.shell{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:clamp(18px,3.5vw,40px)}
+
+.mono{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+
+header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule);padding-bottom:22px;margin-bottom:34px}
+h1{font-family:"Cinzel",serif;font-weight:400;font-size:clamp(22px,3.4vw,34px);
+  letter-spacing:.34em;text-indent:.34em;margin:0}
+.tagline{margin:9px 0 0;color:var(--ink-soft)}
+.tagline.mono{font-size:9px;letter-spacing:.24em}
+
+.states{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.state{display:flex;align-items:center;gap:8px;color:var(--ink-soft)}
+.state b{color:var(--ink);font-weight:500}
+.pip{width:6px;height:6px;border-radius:50%;flex:none;background:var(--ink-soft)}
+.pip.pass{background:var(--moss)} .pip.warn{background:var(--amber)}
+.pip.fail{background:var(--oxide)} .pip.unknown{background:transparent;border:1px solid var(--ink-soft)}
+
+.banner{border:1px solid var(--rule);border-left:3px solid var(--ink-soft);padding:14px 18px;margin:0 0 30px;line-height:1.65}
+.banner.pass{border-left-color:var(--moss)}
+.banner.warn{border-left-color:var(--amber)}
+.banner.fail{border-left-color:var(--oxide)}
+.banner.unknown{border-left-color:var(--ink-soft);background:rgba(46,42,36,.03)}
+.banner h2{margin:0 0 6px;font-family:"Cinzel",serif;font-size:14px;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+.banner p{margin:0;color:var(--ink-soft);font-size:14px}
+
+h3.sec{font-family:"Cinzel",serif;font-size:12px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;margin:0 0 4px;color:var(--ink)}
+.sechint{margin:0 0 18px;color:var(--ink-soft);font-size:13px}
+section{margin:0 0 42px}
+
+/* pipeline */
+.orbit{position:relative;padding:26px 0 6px}
+.orbit::before{content:"";position:absolute;left:2%;right:2%;top:39px;height:1px;
+  background:linear-gradient(90deg,rgba(201,162,39,0),rgba(201,162,39,.4) 15%,rgba(201,162,39,.4) 85%,rgba(201,162,39,0))}
+.stages{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;list-style:none;margin:0;padding:0}
+.stage{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0;position:relative;
+  background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-align:center}
+.orb{width:15px;height:15px;border-radius:50%;background:var(--marble-deep);
+  border:1px solid rgba(46,42,36,.3);position:relative;z-index:1;transition:all .3s ease}
+.stage.active .orb{background:var(--gilt-warm);border-color:var(--gilt);box-shadow:0 0 11px 2px rgba(227,194,95,.6)}
+.stage:hover .orb,.stage:focus-visible .orb{transform:scale(1.28)}
+.stage:focus-visible{outline:2px solid var(--gilt);outline-offset:6px}
+.stage .num{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.1em;color:var(--ink-soft)}
+.stage .nm{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.06em;
+  text-transform:uppercase;line-height:1.45;word-break:break-word}
+.stage.active .nm{color:var(--ink)} .stage:not(.active) .nm{color:var(--ink-soft)}
+
+.detail{margin:26px 0 0;border:1px solid var(--rule);padding:18px 20px;min-height:76px}
+.detail .mono{color:var(--ink-soft);margin:0 0 8px}
+.detail h4{margin:0 0 8px;font-family:"Cinzel",serif;font-size:15px;font-weight:500;letter-spacing:.1em}
+.detail p{margin:0;color:var(--ink-soft);font-size:14px;line-height:1.7}
+.detail a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule)}
+.detail a:hover{border-bottom-color:var(--gilt)}
+
+/* records */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.card{border:1px solid var(--rule);padding:13px 15px;background:rgba(251,247,240,.4)}
+.card .t{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gilt);margin:0 0 5px}
+.card .i{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);margin:0 0 5px;word-break:break-all}
+.card .s{font-size:12px;color:var(--ink-soft);margin:0}
+.card .p{font-family:"IBM Plex Mono",monospace;font-size:9px;color:var(--ink-soft);
+  margin:7px 0 0;word-break:break-all;opacity:.75}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-soft);font-weight:500}
+td.sev{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;white-space:nowrap}
+.CRITICAL{color:var(--oxide);font-weight:500} .ERROR{color:var(--oxide)}
+.WARNING{color:var(--amber)} .INFO{color:var(--ink-soft)}
+td code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft)}
+.clean{color:var(--ink-soft);font-size:14px;margin:0}
+
+footer{border-top:1px solid var(--rule);margin-top:12px;padding-top:20px;color:var(--ink-soft);line-height:1.9}
+footer .mono{font-size:9px;letter-spacing:.13em}
+
+@media (max-width:820px){
+  .stages{grid-template-columns:repeat(4,1fr);gap:16px 6px}
+  .orbit::before{display:none}
+  .states{align-items:flex-start}
+  header.top{flex-direction:column}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="chamber"></div>
+<svg class="veining" aria-hidden="true"><filter id="m"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.045" numOctaves="4" seed="7"/><feColorMatrix values="0 0 0 0 0.18 0 0 0 0 0.16 0 0 0 0 0.13 0 0 0 -1.4 1"/></filter><rect width="100%" height="100%" filter="url(#m)"/></svg>
+
+<div class="shell">
+  <header class="top">
+    <div>
+      <h1>AEOS</h1>
+      <p class="tagline mono">Personal Engineering Command System</p>
+      <p class="tagline mono" id="proj">Loading report…</p>
+    </div>
+    <div class="states mono" id="states"></div>
+  </header>
+
+  <div class="banner unknown" id="banner" role="status" aria-live="polite">
+    <h2 id="bannerTitle">Loading</h2>
+    <p id="bannerText">Reading report.json…</p>
+  </div>
+
+  <section>
+    <h3 class="sec">Delivery Pipeline</h3>
+    <p class="sechint">Eight stages, rendered from the STAGE records in the report. Select one for detail.</p>
+    <div class="orbit">
+      <ul class="stages" id="stages"></ul>
+    </div>
+    <div class="detail" id="detail">
+      <p class="mono">No stage selected</p>
+      <p>Choose a stage above to see its record.</p>
+    </div>
+  </section>
+
+  <section>
+    <h3 class="sec">Findings</h3>
+    <p class="sechint" id="findHint"></p>
+    <div id="findings"></div>
+  </section>
+
+  <section>
+    <h3 class="sec">Record Index</h3>
+    <p class="sechint" id="recHint"></p>
+    <div class="grid" id="records"></div>
+  </section>
+
+  <footer>
+    <p class="mono">Read-only preview. Renders <code>report.json</code> produced by <code>aeos check --format json</code>.</p>
+    <p class="mono">It computes nothing. Every state shown is AEOS output, never a second opinion.</p>
+  </footer>
+</div>
+
+<script>
+const STAGE_NAMES = {
+  "STAGE-01-INTAKE":"Intake", "STAGE-02-DESIGN":"Design", "STAGE-03-BUILD":"Build",
+  "STAGE-04-QA":"QA", "STAGE-05-SECURITY":"Security",
+  "STAGE-06-COMPLIANCE":"Compliance & Accessibility",
+  "STAGE-07-RELEASE":"Release", "STAGE-08-REPORT":"Report & Documentation"
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function setBanner(kind, title, text){
+  const b = $("banner");
+  b.className = "banner " + kind;
+  $("bannerTitle").textContent = title;
+  $("bannerText").textContent = text;
+}
+
+function pipFor(result){
+  if (result === "PASS") return "pass";
+  if (result === "PASS_WITH_WARNINGS") return "warn";
+  if (result === "FAIL") return "fail";
+  return "unknown";
+}
+
+function render(r){
+  const p = r.project || {};
+  $("proj").textContent = `${p.name || "unknown project"} · ${p.id || "—"} · Level ${p.level || "?"} / ${p.security_level || "?"}`;
+
+  const s = r.summary || {};
+  $("states").innerHTML = [
+    ["Result", r.result || "UNKNOWN", pipFor(r.result)],
+    ["Schema", r.schema_version || "unknown", "unknown"],
+    ["Records", s.records_discovered ?? "unknown", "unknown"],
+    ["Critical", s.critical ?? "?", s.critical > 0 ? "fail" : "pass"],
+    ["Errors", s.errors ?? "?", s.errors > 0 ? "fail" : "pass"]
+  ].map(([k, v, cls]) =>
+    `<span class="state"><span class="pip ${cls}"></span>${esc(k)} <b>${esc(v)}</b></span>`).join("");
+
+  if (r.result === "PASS")
+    setBanner("pass", "Pass", "No blocking findings. This reflects the checks AEOS performs, not everything that could be wrong.");
+  else if (r.result === "PASS_WITH_WARNINGS")
+    setBanner("warn", "Pass with warnings", `${s.warnings} warning(s). Warnings do not fail the build by default.`);
+  else if (r.result === "FAIL")
+    setBanner("fail", "Fail", `${s.critical} critical and ${s.errors} error finding(s). This project is blocked.`);
+  else
+    setBanner("unknown", "Unknown", "The report did not declare a result. Unknown is shown as unknown.");
+
+  // Pipeline
+  const stages = (r.records || []).filter(x => x.type === "STAGE")
+    .sort((a, b) => a.id.localeCompare(b.id));
+  $("stages").innerHTML = stages.length ? stages.map((st, i) => `
+    <li><button class="stage" data-i="${i}" aria-pressed="false">
+      <span class="num">${String(i + 1).padStart(2, "0")}</span>
+      <span class="orb"></span>
+      <span class="nm">${esc(STAGE_NAMES[st.id] || st.id)}</span>
+    </button></li>`).join("")
+    : `<li><p class="clean">No STAGE records in this report.</p></li>`;
+
+  $("stages").querySelectorAll(".stage").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const st = stages[+btn.dataset.i];
+      $("stages").querySelectorAll(".stage").forEach(b => {
+        b.classList.remove("active"); b.setAttribute("aria-pressed", "false");
+      });
+      btn.classList.add("active"); btn.setAttribute("aria-pressed", "true");
+      $("detail").innerHTML =
+        `<p class="mono">${esc(st.id)} · status ${esc(st.status || "unknown")}</p>
+         <h4>${esc(STAGE_NAMES[st.id] || st.id)}</h4>
+         <p>Protocol, principles, exit gate and memory live in the record:
+         <a href="../${esc(st.path)}">${esc(st.path)}</a>${
+           st.references?.length ? ` · references ${esc(st.references.join(", "))}` : ""}</p>`;
+    });
+  });
+
+  // Findings
+  const f = r.findings || [];
+  $("findHint").textContent = f.length
+    ? `${f.length} finding(s), ordered by severity.`
+    : "None. AEOS found nothing blocking in the checks it performs.";
+  $("findings").innerHTML = f.length ? `
+    <table><thead><tr><th>Severity</th><th>Rule</th><th>Message</th><th>Path</th></tr></thead><tbody>
+    ${f.map(x => `<tr>
+      <td class="sev ${esc(x.severity)}">${esc(x.severity)}</td>
+      <td><code>${esc(x.rule)}</code></td>
+      <td>${esc(x.message)}${x.recommended_action ? `<br><small>${esc(x.recommended_action)}</small>` : ""}</td>
+      <td><code>${esc((x.paths || []).join(", "))}</code></td></tr>`).join("")}
+    </tbody></table>` : `<p class="clean">Nothing to show.</p>`;
+
+  // Records
+  const recs = r.records || [];
+  $("recHint").textContent = `${recs.length} record(s) discovered and validated.`;
+  $("records").innerHTML = recs.map(x => `
+    <div class="card">
+      <p class="t">${esc(x.type)}</p>
+      <p class="i">${esc(x.id)}</p>
+      <p class="s">${esc(x.status || "no status")}</p>
+      <p class="p">${esc(x.path)}</p>
+    </div>`).join("");
+}
+
+fetch("report.json", { cache: "no-store" })
+  .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+  .then(render)
+  .catch(err => {
+    setBanner("unknown", "No report available",
+      `Could not load report.json (${err.message}). Run ./preview/build.sh from the repository root, then serve this directory over HTTP. Opening the file directly with file:// will not work — browsers block fetch from that origin.`);
+    $("proj").textContent = "No report loaded";
+  });
+</script>
+</body>
+</html>
