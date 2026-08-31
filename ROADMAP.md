@@ -13,9 +13,9 @@ M3 Integrity validation → **DONE** — duplicate IDs + broken references + req
 
 M4 Reporting contract → **DONE** — console + JSON + stable exit codes
 
-M5 Security integration → **CURRENT / CI READY** — adapter and verification workflow implemented; repository identity/publish + successful real run required
+M5 Security integration → **DONE** — pinned Gitleaks 8.30.0 adapter, dir + git-history coverage, redaction, blocking exit codes; closed 2026-08-26 by a passing GitHub Actions run on `baa-211/Aeos-` (run #4, all 14 steps green, including a test proving AEOS blocks on a planted secret)
 
-M6 Dogfood → run against aeos-cli itself, fix real friction, and close accepted MVP gap REQ-CLI-006 (STATUS staleness)
+M6 Dogfood → **CURRENT** — run against aeos-cli itself, fix real friction, and close accepted MVP gap REQ-CLI-006 (STATUS staleness)
 
 M7 SEO Engine pilot → apply to the SEO Intelligence Engine and measure usefulness/noise
 

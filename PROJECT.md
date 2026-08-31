@@ -5,9 +5,9 @@ aeos_version: "0.1"
 project_level: B
 security_level: S2
 status: development
-version: "0.0.1"
+version: "0.0.7"
 created: 2026-08-15
-updated: 2026-08-15
+updated: 2026-08-26
 ---
 
 # AEOS CLI
@@ -22,4 +22,4 @@ A project can run `aeos check` and receive reliable objective findings.
 No cloud backend, database, dashboard, embedded AI, plugin system, or architecture inference in the MVP.
 
 ## Current Milestone
-M1 — Manifest loading and validation.
+M6 — Dogfood. M1 through M5 are complete; M5 closed on 2026-08-26 with live GitHub Actions evidence.
