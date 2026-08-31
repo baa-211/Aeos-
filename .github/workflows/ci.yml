@@ -1,0 +1,150 @@
+name: AEOS CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aeos-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, test, and AEOS self-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      GITLEAKS_VERSION: "8.30.0"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Sourced from go.mod so the toolchain and the module declaration
+          # cannot drift apart. A hardcoded patch version that does not exist
+          # fails this step before any AEOS evidence is produced.
+          go-version-file: go.mod
+          cache: false
+
+      - name: Format check
+        shell: bash
+        run: |
+          set -euo pipefail
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            echo "The following Go files are not gofmt-formatted:"
+            printf '%s\n' "$files"
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build AEOS CLI
+        run: go build -trimpath -o ./bin/aeos ./cmd/aeos
+
+      - name: Install and verify pinned Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          checksums="gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          cd "$tmp"
+
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$archive" "$base/$archive"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$checksums" "$base/$checksums"
+
+          grep "  ${archive}$" "$checksums" > selected-checksum.txt
+          sha256sum --check selected-checksum.txt
+
+          tar -xzf "$archive" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          test "$(gitleaks version | tr -d '\r\n' | sed 's/^v//')" = "$GITLEAKS_VERSION"
+
+      - name: Real Gitleaks detection smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          # Generate ephemeral secret material at runtime so no test secret is
+          # stored in the repository itself.
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+            -out "$tmp/ephemeral-private-key.pem" >/dev/null 2>&1
+
+          set +e
+          gitleaks dir --no-banner --no-color --redact=100 --exit-code 10 "$tmp"
+          rc=$?
+          set -e
+
+          if [ "$rc" -ne 10 ]; then
+            echo "Expected Gitleaks to detect the runtime-generated private key; exit code was $rc."
+            exit 1
+          fi
+
+      - name: AEOS self-check with real scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./bin/aeos check
+          ./bin/aeos check --format json > /tmp/aeos-report.json
+          test -s /tmp/aeos-report.json
+
+          # The reporting contract requires machine-independent output. An
+          # absolute path in the report means the same project would produce
+          # different reports on different machines.
+          if grep -qE '"[^"]*/(home|Users|tmp|github)/' /tmp/aeos-report.json; then
+            echo "Report contains machine-specific absolute paths:"
+            grep -oE '"[^"]*/(home|Users|tmp|github)/[^"]*"' /tmp/aeos-report.json | sort -u
+            exit 1
+          fi
+
+      - name: AEOS blocks on a real planted secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Proves the full path end to end: Gitleaks detects, AEOS surfaces the
+          # finding as blocking, and the process exits 3. A passing scanner that
+          # AEOS fails to act on would otherwise look identical to a clean run.
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          # Copy the required project files so the planted secret is the only
+          # finding. Without them, unrelated integrity errors would decide the
+          # exit code and the test would no longer prove what it claims.
+          cp aeos.yaml PROJECT.md STATUS.md "$tmp/"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+            -out "$tmp/planted-private-key.pem" >/dev/null 2>&1
+
+          set +e
+          (cd "$tmp" && "$GITHUB_WORKSPACE/bin/aeos" check > "$tmp/out.txt" 2>&1)
+          rc=$?
+          set -e
+
+          cat "$tmp/out.txt"
+          if [ "$rc" -ne 3 ]; then
+            echo "Expected AEOS to block with exit code 3 on a planted secret; got $rc."
+            exit 1
+          fi
+          grep -q "AEOS-SEC-001" "$tmp/out.txt"
