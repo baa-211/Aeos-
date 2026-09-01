@@ -791,6 +791,21 @@ addEventListener("keydown", e => {
 const WINS = new Map();
 let zTop = 10, cascade = 0;
 
+/* Closing a window is a display action, never a loss of work. Geometry,
+   drafted comments, decision choices and half-written text all persist and
+   return when the window is reopened. Nothing in this interface treats a
+   closed window as abandoned progress. */
+const store = {
+  get(k, fallback){
+    try { const v = localStorage.getItem("aeos." + k); return v === null ? fallback : JSON.parse(v); }
+    catch { return ((window.__mem ||= {})[k] ?? fallback); }
+  },
+  set(k, v){
+    try { localStorage.setItem("aeos." + k, JSON.stringify(v)); }
+    catch { (window.__mem ||= {})[k] = v; }
+  }
+};
+
 function focusWin(w){
   WINS.forEach(x => x.el.classList.remove("focus"));
   w.el.classList.add("focus");
@@ -819,8 +834,8 @@ function makeWindow(key, {id, title, hue, width, height}){
       <span class="win-swatch" style="background:rgb(${hue.join(",")})"></span>
       <div class="win-titles"><p class="id">${esc(id)}</p><h2>${esc(title)}</h2></div>
       <div class="win-btns">
-        <button class="wb" data-a="collapse" aria-label="Collapse" title="Collapse">–</button>
-        <button class="wb" data-a="close" aria-label="Close" title="Close">×</button>
+        <button class="wb" data-a="collapse" aria-label="Collapse window" title="Collapse">–</button>
+        <button class="wb" data-a="close" aria-label="Close window" title="Close (nothing is lost)">×</button>
       </div>
     </div>
     <div class="win-body"></div>
@@ -828,46 +843,69 @@ function makeWindow(key, {id, title, hue, width, height}){
 
   const w = {el, key, collapsed:false, body: el.querySelector(".win-body")};
 
-  // cascade from the right so a stack stays readable
-  const ww = Math.min(width, innerWidth - 40), hh = Math.min(height, innerHeight - 80);
+  // restore where this window was last placed, or cascade from the right
+  const geo = store.get("geo." + key, null);
+  const ww = Math.min(geo?.w || width,  innerWidth - 40);
+  const hh = Math.min(geo?.h || height, innerHeight - 80);
   const step = (cascade++ % 6) * 26;
   el.style.width  = ww + "px";
   el.style.height = hh + "px";
-  el.style.left   = Math.max(12, innerWidth - ww - 34 - step) + "px";
-  el.style.top    = Math.max(12, 96 + step) + "px";
+  el.style.left   = clamp(geo?.x ?? (innerWidth - ww - 34 - step), 12, Math.max(12, innerWidth - 70)) + "px";
+  el.style.top    = clamp(geo?.y ?? (96 + step), 12, Math.max(12, innerHeight - 42)) + "px";
+  if(geo?.collapsed){
+    w.collapsed = true;
+    el.classList.add("collapsed");
+  }
+
+  const remember = () => store.set("geo." + key, {
+    x: el.offsetLeft, y: el.offsetTop,
+    w: el.offsetWidth, h: el.offsetHeight, collapsed: w.collapsed
+  });
 
   $("windows").appendChild(el);
   WINS.set(key, w);
   focusWin(w);
 
   el.addEventListener("pointerdown", () => focusWin(w), true);
-  el.querySelector('[data-a="close"]').onclick = e => { e.stopPropagation(); closeWin(key); };
-  el.querySelector('[data-a="collapse"]').onclick = e => {
-    e.stopPropagation();
+  const collapseBtn = el.querySelector('[data-a="collapse"]');
+  if(w.collapsed){ collapseBtn.textContent = "▢"; collapseBtn.title = "Expand"; }
+
+  el.querySelector('[data-a="close"]').onclick = e => {
+    e.stopPropagation(); e.preventDefault();
+    remember();
+    closeWin(key);
+  };
+  collapseBtn.onclick = e => {
+    e.stopPropagation(); e.preventDefault();
     w.collapsed = !w.collapsed;
     el.classList.toggle("collapsed", w.collapsed);
-    e.target.textContent = w.collapsed ? "▢" : "–";
-    e.target.title = w.collapsed ? "Expand" : "Collapse";
+    collapseBtn.textContent = w.collapsed ? "▢" : "–";
+    collapseBtn.title = w.collapsed ? "Expand" : "Collapse";
+    remember();
   };
 
   drag(el.querySelector(".win-head"), (dx,dy,s0) => {
-    el.style.left = clamp(s0.left+dx, -ww+70, innerWidth-70) + "px";
+    el.style.left = clamp(s0.left+dx, -el.offsetWidth+70, innerWidth-70) + "px";
     el.style.top  = clamp(s0.top +dy, 0, innerHeight-42) + "px";
-  }, () => ({left: el.offsetLeft, top: el.offsetTop}));
+  }, () => ({left: el.offsetLeft, top: el.offsetTop}), remember);
 
   drag(el.querySelector(".win-grip"), (dx,dy,s0) => {
     el.style.width  = Math.max(290, Math.min(innerWidth-20,  s0.w+dx)) + "px";
     el.style.height = Math.max(120, Math.min(innerHeight-20, s0.h+dy)) + "px";
-  }, () => ({w: el.offsetWidth, h: el.offsetHeight}));
+  }, () => ({w: el.offsetWidth, h: el.offsetHeight}), remember);
 
   return w;
 }
 
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
-function drag(handle, move, snapshot){
+function drag(handle, move, snapshot, done){
   handle.addEventListener("pointerdown", e => {
     if(e.button !== 0) return;
+    // Controls live inside the drag handle. Calling preventDefault here
+    // suppresses the click that follows, which silently disabled close and
+    // collapse. Interactive descendants keep their own events.
+    if(e.target.closest("button, input, textarea, select, a")) return;
     e.preventDefault();
     const sx = e.clientX, sy = e.clientY, s0 = snapshot();
     handle.setPointerCapture(e.pointerId);
@@ -876,6 +914,7 @@ function drag(handle, move, snapshot){
       handle.removeEventListener("pointermove", onMove);
       handle.removeEventListener("pointerup", onUp);
       handle.removeEventListener("pointercancel", onUp);
+      if(done) done();
     };
     handle.addEventListener("pointermove", onMove);
     handle.addEventListener("pointerup", onUp);
@@ -888,16 +927,8 @@ function drag(handle, move, snapshot){
    project state: the preview must not become a second source of truth, and
    a note that lives only in a browser is hidden state by definition. Drafts
    persist locally as a convenience and say plainly that they are unsaved. */
-const NOTE_KEY = id => "aeos.notes." + id;
-
-function loadNotes(id){
-  try { return JSON.parse(localStorage.getItem(NOTE_KEY(id)) || "[]"); }
-  catch { return (window.__mem ||= {})[id] || []; }
-}
-function saveNotes(id, list){
-  try { localStorage.setItem(NOTE_KEY(id), JSON.stringify(list)); }
-  catch { (window.__mem ||= {})[id] = list; }
-}
+const loadNotes = id => store.get("notes." + id, []);
+const saveNotes = (id, list) => store.set("notes." + id, list);
 
 const today = () => new Date().toISOString().slice(0,10);
 
@@ -930,6 +961,12 @@ function wireComments(w, id){
   const t = w.el.querySelector("[data-title]");
   const b = w.el.querySelector("[data-body]");
   const said = w.el.querySelector("[data-said]");
+
+  // half-written text is work too; it returns when the window does
+  t.value = store.get("wip.t." + id, "");
+  b.value = store.get("wip.b." + id, "");
+  t.addEventListener("input", () => store.set("wip.t." + id, t.value));
+  b.addEventListener("input", () => store.set("wip.b." + id, b.value));
   const flash = m => { said.textContent = m; setTimeout(()=>{ said.textContent=""; }, 3200); };
 
   w.el.querySelector('[data-a="add"]').onclick = () => {
@@ -939,6 +976,7 @@ function wireComments(w, id){
     next.push({date: today(), title: title || "Note", body});
     saveNotes(id, next);
     t.value = ""; b.value = "";
+    store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
     renderNotes(w, id);
     flash("Drafted. Not in the record until you paste it there.");
   };
@@ -969,16 +1007,8 @@ function wireComments(w, id){
    record says and lets a choice be drafted; writing the resolution back into
    the record is a person's act, exactly as with comments. */
 const SETTLED = new Set(["accepted","rejected","superseded","withdrawn","implemented"]);
-const PICK_KEY = id => "aeos.pick." + id;
-
-function loadPick(id){
-  try { return localStorage.getItem(PICK_KEY(id)) || ""; }
-  catch { return (window.__picks ||= {})[id] || ""; }
-}
-function savePick(id, v){
-  try { localStorage.setItem(PICK_KEY(id), v); }
-  catch { (window.__picks ||= {})[id] = v; }
-}
+const loadPick = id => store.get("pick." + id, "");
+const savePick = (id, v) => store.set("pick." + id, v);
 
 function openDecisionsFor(stageId){
   return (DECISIONS[stageId] || []).filter(d => !SETTLED.has(d.status));
@@ -1094,6 +1124,8 @@ function buildBrief(stageId, question){
 function wirePrompt(w, stageId){
   const ta = w.el.querySelector("[data-prompt]");
   const said = w.el.querySelector("[data-pmsg]");
+  ta.value = store.get("wip.p." + stageId, "");
+  ta.addEventListener("input", () => store.set("wip.p." + stageId, ta.value));
   w.el.querySelector('[data-a="brief"]').onclick = () =>
     copy(buildBrief(stageId, ta.value.trim()), said, "Full brief copied.");
   w.el.querySelector('[data-a="brief-short"]').onclick = () => {
@@ -1166,6 +1198,10 @@ function showStage(id){
       </div>
       <p class="said" data-said></p>
       <div data-notes style="margin-top:16px"></div>
+      <div class="note"><b>Closing this window loses nothing.</b>
+        Drafts, decision choices, half-written text and the window\u2019s own size and position
+        all return when you reopen it. Nothing here advances or halts the pipeline; the pipeline
+        moves when <code>aeos check</code> runs and when records change.</div>
       <div class="note"><b>Drafts live in this browser only.</b>
         They are not project state. AEOS records are the single home for notes —
         use <em>Copy for record</em> and paste under <code>## Memory</code> in

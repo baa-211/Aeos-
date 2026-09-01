@@ -4,7 +4,17 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
-## [0.0.13] — 2026-08-31
+## [0.0.14] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Fixed
+- **Windows could not be closed or collapsed.** The drag handler on the title bar called `preventDefault` on pointerdown, which suppressed the click event for the buttons nested inside it. Both controls were silently dead. The handler now ignores pointer events originating on interactive descendants.
+
+### Added
+- **Closing a window loses nothing.** Window position, size and collapsed state persist per window and return on reopen. Drafted comments, decision choices and half-written text in the comment and prompt fields all survive being closed. Closing is a display action; it never advances or halts the pipeline, which moves only when `aeos check` runs and records change. The window says so.
+- Draft storage routed through one helper with a shared in-memory fallback for `file://` origins where `localStorage` is unavailable.
+
 
 Milestone: M6 (Dogfood) in progress.
 

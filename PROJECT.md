@@ -5,7 +5,7 @@ aeos_version: "0.1"
 project_level: B
 security_level: S2
 status: development
-version: "0.0.13"
+version: "0.0.14"
 created: 2026-08-15
 updated: 2026-08-31
 ---
