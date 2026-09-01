@@ -4,7 +4,18 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
-## [0.0.11] — 2026-08-31
+## [0.0.12] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **Windows.** Stage and intake panels are real windows: draggable by the title bar, resizable from the corner grip, collapsible to the bar, closable, and focus-stacked. Several can be open at once and cascade so a stack stays readable. Escape closes the focused window; Cmd/Ctrl-W closes all.
+- **Comments per stage.** Each stage window carries a title and body field for notes on the work at that gate. Comments are drafted locally and exported as a Markdown block in the exact shape of a record memory entry, ready to paste under `## Memory` and commit. Verified to round-trip through the same parser `embed.py` uses to read records.
+
+### Changed
+- Removed the "Personal Engineering Command System" subtitle from the display.
+- Number shortcuts 1–8 are suppressed while a text field has focus.
+
 
 Milestone: M6 (Dogfood) in progress.
 

@@ -60,28 +60,44 @@ body{
 #creed .k{font-size:8.5px;letter-spacing:.44em;color:var(--gilt-dim)}
 #creed .v{margin:9px 0 0;font-size:12px;font-style:italic;color:var(--marble-3)}
 
-/* ── panels ── */
-.panel{
-  position:fixed;z-index:8;width:min(94vw,430px);
-  background:linear-gradient(174deg,rgba(26,22,19,.97),rgba(15,13,11,.98));
-  border:1px solid var(--edge);backdrop-filter:blur(11px);
-  box-shadow:0 26px 70px rgba(0,0,0,.62);
-  display:none;max-height:78vh;overflow-y:auto;overscroll-behavior:contain}
-.panel.open{display:block}
-.panel::-webkit-scrollbar{width:5px}
-.panel::-webkit-scrollbar-thumb{background:var(--gilt-dim)}
-#stagePanel{top:50%;right:30px;transform:translateY(-50%)}
-#dropPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,540px)}
-.ph{padding:18px 22px;border-bottom:1px solid var(--edge-2);
-  display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
-  position:sticky;top:0;background:rgba(15,13,11,.97);z-index:1}
-.ph .id{font-size:8.5px;color:var(--gilt);margin:0 0 6px}
-.ph h2{font-family:"Cinzel",serif;font-size:16px;font-weight:500;letter-spacing:.1em;margin:0;color:var(--marble)}
-.x{background:none;border:1px solid var(--edge);color:var(--marble-3);
-  width:26px;height:26px;flex:none;cursor:pointer;font-size:14px;line-height:1;font-family:inherit}
-.x:hover{color:var(--marble);border-color:var(--gilt)}
-.x:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
-.pb{padding:18px 22px 24px}
+/* ── windows ── */
+#windows{position:fixed;inset:0;z-index:8;pointer-events:none}
+.win{
+  position:absolute;pointer-events:auto;display:flex;flex-direction:column;
+  background:linear-gradient(174deg,rgba(26,22,19,.975),rgba(14,12,10,.985));
+  border:1px solid var(--edge);backdrop-filter:blur(12px);
+  box-shadow:0 22px 62px rgba(0,0,0,.66);min-width:290px;min-height:52px;
+  max-width:96vw;max-height:92vh;overflow:hidden}
+.win.focus{border-color:rgba(201,162,39,.42);box-shadow:0 26px 74px rgba(0,0,0,.76)}
+.win.collapsed{height:auto!important;min-height:0;resize:none}
+.win.collapsed .win-body,.win.collapsed .win-grip{display:none}
+
+.win-head{
+  flex:none;display:flex;align-items:center;gap:10px;padding:11px 12px 11px 15px;
+  border-bottom:1px solid var(--edge-2);cursor:grab;user-select:none;
+  background:rgba(20,17,14,.7)}
+.win-head:active{cursor:grabbing}
+.win.collapsed .win-head{border-bottom:0}
+.win-swatch{width:9px;height:9px;flex:none;transform:rotate(45deg);border:1px solid rgba(0,0,0,.4)}
+.win-titles{flex:1;min-width:0}
+.win-titles .id{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--gilt-dim);margin:0 0 3px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.win-titles h2{font-family:"Cinzel",serif;font-size:14px;font-weight:500;letter-spacing:.09em;
+  margin:0;color:var(--marble);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win-btns{flex:none;display:flex;gap:5px}
+.wb{background:none;border:1px solid var(--edge);color:var(--marble-3);
+  width:23px;height:23px;cursor:pointer;font-size:12px;line-height:1;font-family:inherit;padding:0}
+.wb:hover{color:var(--marble);border-color:var(--gilt)}
+.wb:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+
+.win-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:17px 20px 22px}
+.win-body::-webkit-scrollbar{width:5px}
+.win-body::-webkit-scrollbar-thumb{background:var(--gilt-dim)}
+.win-grip{position:absolute;right:0;bottom:0;width:17px;height:17px;cursor:nwse-resize;
+  background:linear-gradient(135deg,transparent 48%,var(--gilt-dim) 48%,var(--gilt-dim) 60%,
+    transparent 60%,transparent 72%,var(--gilt-dim) 72%,var(--gilt-dim) 84%,transparent 84%)}
+
 .blk{margin:0 0 20px}
 .blk:last-child{margin:0}
 .blk>h3{font-size:8.5px;color:var(--gilt-dim);margin:0 0 9px;font-family:"IBM Plex Mono",monospace;
@@ -90,7 +106,9 @@ body{
 .blk ol,.blk ul{margin:0;padding-left:17px;font-size:12.5px;line-height:1.85;color:var(--marble-2)}
 .blk li{margin:0 0 4px}
 .mem{border-left:2px solid var(--gilt-dim);padding:2px 0 2px 13px;margin:0 0 15px}
+.mem.mine{border-left-color:var(--moss)}
 .mem .d{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.13em;color:var(--gilt-dim)}
+.mem.mine .d{color:var(--moss)}
 .mem .t{font-size:13px;color:var(--marble);margin:4px 0 5px;font-weight:400}
 .mem .b{font-size:12.5px;line-height:1.75;color:var(--marble-3);margin:0}
 .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.14em;
@@ -104,6 +122,27 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
 .note{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:13px 15px;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
+
+/* ── comments ── */
+textarea.cmt{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--edge);
+  color:var(--marble);font-family:"Spectral",Georgia,serif;font-size:13px;font-weight:300;
+  line-height:1.65;padding:10px 12px;resize:vertical;min-height:74px;border-radius:0}
+textarea.cmt:focus{outline:none;border-color:var(--gilt)}
+textarea.cmt::placeholder{color:var(--marble-3);opacity:.6}
+input.cmt-t{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--edge);
+  color:var(--marble);font-family:"Spectral",Georgia,serif;font-size:13px;font-weight:400;
+  padding:9px 12px;margin:0 0 8px;border-radius:0}
+input.cmt-t:focus{outline:none;border-color:var(--gilt)}
+.cmt-row{display:flex;gap:7px;margin:9px 0 0;flex-wrap:wrap}
+.btn{background:none;border:1px solid var(--edge);color:var(--marble-2);
+  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:8px 13px;cursor:pointer}
+.btn:hover{border-color:var(--gilt);color:var(--marble)}
+.btn:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.btn.primary{border-color:var(--gilt-dim);color:var(--gilt-lit)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.said{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
+  color:var(--moss);margin:9px 0 0;min-height:12px}
 
 /* ── drop ── */
 #dropZone{position:fixed;inset:0;z-index:7;display:none;place-items:center;
@@ -123,8 +162,7 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
 
 @media (prefers-reduced-motion:reduce){#dropZone .ring{animation:none}}
 @media (max-width:760px){
-  #stagePanel{right:auto;left:50%;top:auto;bottom:0;transform:translateX(-50%);
-    width:100vw;max-height:66vh;border-left:0;border-right:0;border-bottom:0}
+  .win{max-width:100vw}
   #tl,#tr{font-size:9px} #tr{right:16px} #tl{left:16px}
   #creed .v{display:none}
 }
@@ -174,7 +212,6 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
 
 <div id="title">
   <h1>AEOS</h1>
-  <p class="mono">Personal Engineering Command System</p>
 </div>
 
 <div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb or press 1–8</div>
@@ -190,17 +227,7 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
     <p>Nothing is written. AEOS will propose, not act.</p></div>
 </div>
 
-<section class="panel" id="stagePanel" role="dialog" aria-modal="false" aria-labelledby="spTitle">
-  <div class="ph"><div><p class="id mono" id="spId"></p><h2 id="spTitle"></h2></div>
-    <button class="x" id="spClose" aria-label="Close">×</button></div>
-  <div class="pb" id="spBody"></div>
-</section>
-
-<section class="panel" id="dropPanel" role="dialog" aria-modal="false" aria-labelledby="dpTitle">
-  <div class="ph"><div><p class="id mono">Intake · Proposal</p><h2 id="dpTitle">Received</h2></div>
-    <button class="x" id="dpClose" aria-label="Close">×</button></div>
-  <div class="pb" id="dpBody"></div>
-</section>
+<div id="windows"></div>
 
 <script>
 const REPORT = __REPORT__;
@@ -701,32 +728,211 @@ cv.addEventListener("click", e => {
   if(hit) showStage(hit.id);
 });
 addEventListener("keydown", e => {
-  if(e.key === "Escape"){ closePanels(); return; }
+  if(e.key === "Escape"){
+    const focused = [...WINS.values()].find(w=>w.el.classList.contains("focus"));
+    if(focused) closeWin(focused.key); else closePanels();
+    return;
+  }
+  if(e.key.toLowerCase() === "w" && (e.metaKey||e.ctrlKey)){ e.preventDefault(); closePanels(); return; }
+  const tag = (e.target.tagName||"").toLowerCase();
+  if(tag === "input" || tag === "textarea") return;
   const n = parseInt(e.key,10);
   if(n>=1 && n<=8 && ORBS[n-1]) showStage(ORBS[n-1].id);
 });
 
-function closePanels(){
-  $("stagePanel").classList.remove("open");
-  $("dropPanel").classList.remove("open");
-  openStage = null;
-}
-$("spClose").onclick = closePanels;
-$("dpClose").onclick = closePanels;
+/* ─────────── window manager ─────────── */
+const WINS = new Map();
+let zTop = 10, cascade = 0;
 
+function focusWin(w){
+  WINS.forEach(x => x.el.classList.remove("focus"));
+  w.el.classList.add("focus");
+  w.el.style.zIndex = ++zTop;
+}
+
+function closeWin(key){
+  const w = WINS.get(key);
+  if(!w) return;
+  w.el.remove();
+  WINS.delete(key);
+  if(key.startsWith("stage:")) openStage = null;
+}
+
+function closePanels(){ [...WINS.keys()].forEach(closeWin); cascade = 0; }
+
+function makeWindow(key, {id, title, hue, width, height}){
+  if(WINS.has(key)){ const w = WINS.get(key); focusWin(w); return w; }
+
+  const el = document.createElement("section");
+  el.className = "win";
+  el.setAttribute("role","dialog");
+  el.setAttribute("aria-label", title);
+  el.innerHTML = `
+    <div class="win-head">
+      <span class="win-swatch" style="background:rgb(${hue.join(",")})"></span>
+      <div class="win-titles"><p class="id">${esc(id)}</p><h2>${esc(title)}</h2></div>
+      <div class="win-btns">
+        <button class="wb" data-a="collapse" aria-label="Collapse" title="Collapse">–</button>
+        <button class="wb" data-a="close" aria-label="Close" title="Close">×</button>
+      </div>
+    </div>
+    <div class="win-body"></div>
+    <div class="win-grip" title="Resize"></div>`;
+
+  const w = {el, key, collapsed:false, body: el.querySelector(".win-body")};
+
+  // cascade from the right so a stack stays readable
+  const ww = Math.min(width, innerWidth - 40), hh = Math.min(height, innerHeight - 80);
+  const step = (cascade++ % 6) * 26;
+  el.style.width  = ww + "px";
+  el.style.height = hh + "px";
+  el.style.left   = Math.max(12, innerWidth - ww - 34 - step) + "px";
+  el.style.top    = Math.max(12, 96 + step) + "px";
+
+  $("windows").appendChild(el);
+  WINS.set(key, w);
+  focusWin(w);
+
+  el.addEventListener("pointerdown", () => focusWin(w), true);
+  el.querySelector('[data-a="close"]').onclick = e => { e.stopPropagation(); closeWin(key); };
+  el.querySelector('[data-a="collapse"]').onclick = e => {
+    e.stopPropagation();
+    w.collapsed = !w.collapsed;
+    el.classList.toggle("collapsed", w.collapsed);
+    e.target.textContent = w.collapsed ? "▢" : "–";
+    e.target.title = w.collapsed ? "Expand" : "Collapse";
+  };
+
+  drag(el.querySelector(".win-head"), (dx,dy,s0) => {
+    el.style.left = clamp(s0.left+dx, -ww+70, innerWidth-70) + "px";
+    el.style.top  = clamp(s0.top +dy, 0, innerHeight-42) + "px";
+  }, () => ({left: el.offsetLeft, top: el.offsetTop}));
+
+  drag(el.querySelector(".win-grip"), (dx,dy,s0) => {
+    el.style.width  = Math.max(290, Math.min(innerWidth-20,  s0.w+dx)) + "px";
+    el.style.height = Math.max(120, Math.min(innerHeight-20, s0.h+dy)) + "px";
+  }, () => ({w: el.offsetWidth, h: el.offsetHeight}));
+
+  return w;
+}
+
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+function drag(handle, move, snapshot){
+  handle.addEventListener("pointerdown", e => {
+    if(e.button !== 0) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, s0 = snapshot();
+    handle.setPointerCapture(e.pointerId);
+    const onMove = ev => move(ev.clientX-sx, ev.clientY-sy, s0);
+    const onUp = () => {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  });
+}
+
+/* ─────────── comments ─────────── */
+/* Comments are drafted here and exported as record entries. They are NOT
+   project state: the preview must not become a second source of truth, and
+   a note that lives only in a browser is hidden state by definition. Drafts
+   persist locally as a convenience and say plainly that they are unsaved. */
+const NOTE_KEY = id => "aeos.notes." + id;
+
+function loadNotes(id){
+  try { return JSON.parse(localStorage.getItem(NOTE_KEY(id)) || "[]"); }
+  catch { return (window.__mem ||= {})[id] || []; }
+}
+function saveNotes(id, list){
+  try { localStorage.setItem(NOTE_KEY(id), JSON.stringify(list)); }
+  catch { (window.__mem ||= {})[id] = list; }
+}
+
+const today = () => new Date().toISOString().slice(0,10);
+
+function recordMarkdown(id, notes){
+  return notes.map(n => `### ${n.date} — ${n.title}\n${n.body}\n`).join("\n");
+}
+
+function renderNotes(w, id){
+  const notes = loadNotes(id);
+  const list = w.el.querySelector("[data-notes]");
+  const exp  = w.el.querySelector('[data-a="export"]');
+  const clr  = w.el.querySelector('[data-a="clear"]');
+  list.innerHTML = notes.length
+    ? notes.map((n,i)=>`<div class="mem mine">
+        <p class="d">${esc(n.date)} · unsaved draft</p>
+        <p class="t">${esc(n.title)}</p>
+        <p class="b">${esc(n.body)}</p>
+        <button class="btn" data-del="${i}" style="margin-top:8px;padding:5px 10px">Remove</button>
+      </div>`).join("")
+    : `<p style="font-size:12.5px;color:var(--marble-3);margin:0">No drafted comments for this stage.</p>`;
+  if(exp) exp.disabled = !notes.length;
+  if(clr) clr.disabled = !notes.length;
+  list.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const next = loadNotes(id); next.splice(+b.dataset.del, 1);
+    saveNotes(id, next); renderNotes(w, id);
+  });
+}
+
+function wireComments(w, id){
+  const t = w.el.querySelector("[data-title]");
+  const b = w.el.querySelector("[data-body]");
+  const said = w.el.querySelector("[data-said]");
+  const flash = m => { said.textContent = m; setTimeout(()=>{ said.textContent=""; }, 3200); };
+
+  w.el.querySelector('[data-a="add"]').onclick = () => {
+    const title = t.value.trim(), body = b.value.trim();
+    if(!body){ flash("A comment needs a body."); b.focus(); return; }
+    const next = loadNotes(id);
+    next.push({date: today(), title: title || "Note", body});
+    saveNotes(id, next);
+    t.value = ""; b.value = "";
+    renderNotes(w, id);
+    flash("Drafted. Not in the record until you paste it there.");
+  };
+
+  w.el.querySelector('[data-a="export"]').onclick = async () => {
+    const md = recordMarkdown(id, loadNotes(id));
+    try { await navigator.clipboard.writeText(md); flash("Copied. Paste under ## Memory in the stage record."); }
+    catch { 
+      const ta = document.createElement("textarea");
+      ta.value = md; ta.style.cssText = "position:fixed;opacity:0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); flash("Copied. Paste under ## Memory in the stage record."); }
+      catch { flash("Copy failed — select the text manually."); }
+      ta.remove();
+    }
+  };
+
+  w.el.querySelector('[data-a="clear"]').onclick = () => {
+    if(!confirm("Discard all drafted comments for this stage?")) return;
+    saveNotes(id, []); renderNotes(w, id);
+  };
+
+  renderNotes(w, id);
+}
+
+/* ─────────── stage window ─────────── */
 function showStage(id){
   const s = STAGES[id];
-  const rec = (report.records||[]).find(r=>r.id===id);
-  openStage = id;
-  $("spId").textContent = id + (rec?.status ? " · " + rec.status : "");
-  $("spTitle").textContent = NAMES[id] || id;
-
-  const isActive = id === activeStage;
-  let html = "";
-
   const skin = STAGE_SKIN[id] || FALLBACK_SKIN;
-  html += `<div class="blk" style="display:flex;align-items:center;gap:14px">
-      <canvas id="spGlyph" width="52" height="52" style="flex:none"></canvas>
+  const rec = (report.records||[]).find(r=>r.id===id);
+  const isActive = id === activeStage;
+  openStage = id;
+
+  const w = makeWindow("stage:"+id, {
+    id: id + (rec?.status ? " · " + rec.status : ""),
+    title: NAMES[id] || id,
+    hue: skin.hue, width: 430, height: Math.min(640, innerHeight-140)
+  });
+
+  let html = `<div class="blk" style="display:flex;align-items:center;gap:14px">
+      <canvas class="spGlyph" width="52" height="52" style="flex:none"></canvas>
       <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
     </div>`;
 
@@ -740,12 +946,29 @@ function showStage(id){
       html += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
     if(s.gate?.length)
       html += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-    if(s.memory?.length)
-      html += `<div class="blk"><h3>Memory · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
-        s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)}</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>`;
   }
 
-  // stage-relevant findings, straight from the report
+  // comments on the work at this stage
+  html += `<div class="blk"><h3>Comments on this stage's work</h3>
+      <input class="cmt-t" data-title placeholder="Short title — what this is about">
+      <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
+      <div class="cmt-row">
+        <button class="btn primary" data-a="add">Add comment</button>
+        <button class="btn" data-a="export">Copy for record</button>
+        <button class="btn" data-a="clear">Discard all</button>
+      </div>
+      <p class="said" data-said></p>
+      <div data-notes style="margin-top:16px"></div>
+      <div class="note"><b>Drafts live in this browser only.</b>
+        They are not project state. AEOS records are the single home for notes —
+        use <em>Copy for record</em> and paste under <code>## Memory</code> in
+        <code>${esc(rec?.path || "the stage record")}</code>, then commit. Until then, nothing here is real.</div>
+    </div>`;
+
+  if(s?.memory?.length)
+    html += `<div class="blk"><h3>Recorded memory · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
+      s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)} · in record</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>`;
+
   const rel = (report.findings||[]).filter(f =>
     id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
   html += `<div class="blk"><h3>Findings at this gate</h3>` +
@@ -754,21 +977,19 @@ function showStage(id){
 
   if(rec) html += `<div class="blk"><h3>Record</h3><p><code>${esc(rec.path)}</code></p></div>`;
 
-  $("spBody").innerHTML = html;
+  w.body.innerHTML = html;
 
-  // repeat the orb's glyph in its own hue, so symbol and stage stay linked
-  const gc = $("spGlyph");
+  const gc = w.el.querySelector(".spGlyph");
   if(gc && GLYPH[skin.glyph]){
     const c = gc.getContext("2d");
     c.translate(26,26); c.scale(19,19);
     c.lineJoin="round"; c.lineCap="round";
-    c.strokeStyle=`rgb(${skin.hue[0]},${skin.hue[1]},${skin.hue[2]})`;
+    c.strokeStyle=`rgb(${skin.hue.join(",")})`;
     c.lineWidth=1.6/19;
     GLYPH[skin.glyph](c);
   }
-  $("dropPanel").classList.remove("open");
-  $("stagePanel").classList.add("open");
-  $("spClose").focus();
+
+  wireComments(w, id);
 }
 
 /* ─────────── drop intake ─────────── */
@@ -808,9 +1029,15 @@ function proposeIntake(files){
   }).join("");
   const risky = files.filter(f=>/Credential|Environment/.test(classify(f.name).kind));
 
-  $("dpTitle").textContent = `${files.length} file${files.length===1?"":"s"} received`;
-  $("dpBody").innerHTML = `
-    <div class="blk"><h3>Stage 01 · Intake — classification</h3>
+  const w = makeWindow("intake:"+Date.now(), {
+    id: "Stage 01 · Intake — proposal",
+    title: `${files.length} file${files.length===1?"":"s"} received`,
+    hue: STAGE_SKIN["STAGE-01-INTAKE"].hue,
+    width: 520, height: Math.min(560, innerHeight-140)
+  });
+
+  w.body.innerHTML = `
+    <div class="blk"><h3>Classification</h3>
       <p>Intake records what arrived and how it classifies. It does not accept, move, or modify anything.</p></div>
     <div class="blk"><table>${rows}</table>
       ${files.length>40?`<p style="margin-top:10px">…and ${files.length-40} more.</p>`:""}</div>
@@ -819,9 +1046,6 @@ function proposeIntake(files){
     <div class="note"><b>Nothing was read, uploaded, or written.</b>
       Only file names and sizes were inspected, in your browser. The pipeline does not advance from this window — a person decides.
       Run <code>aeos check</code> to produce a real report.</div>`;
-  $("stagePanel").classList.remove("open");
-  $("dropPanel").classList.add("open");
-  $("dpClose").focus();
 }
 
 /* ─────────── boot ─────────── */
