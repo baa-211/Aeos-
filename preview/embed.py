@@ -21,6 +21,43 @@ def section(text, name):
     return m.group(1).strip() if m else ""
 
 
+def read_decisions():
+    """Decision records, keyed by the stage they belong to.
+
+    Read-only. The interface renders these; resolutions are drafted there and
+    exported for a person to write back into the record.
+    """
+    out = {}
+    d = os.path.join(root, "docs", "decisions")
+    if not os.path.isdir(d):
+        return out
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith(".md"):
+            continue
+        text = open(os.path.join(d, fn)).read()
+        rid = re.search(r"^id: (\S+)", text, re.M)
+        if not rid:
+            continue
+        stage = re.search(r'^related_stage: "?([^"\n]+)"?', text, re.M)
+        status = re.search(r"^status: (\S+)", text, re.M)
+        prio = re.search(r"^priority: (\S+)", text, re.M)
+        title = re.search(r"^# \S+ — (.+)$", text, re.M)
+        opts = [l.strip() for l in section(text, "Options").split("\n") if l.strip()]
+        out.setdefault(stage.group(1) if stage else "unassigned", []).append({
+            "id": rid.group(1),
+            "title": title.group(1) if title else rid.group(1),
+            "status": status.group(1) if status else "undeclared",
+            "priority": prio.group(1) if prio else "",
+            "question": section(text, "Question"),
+            "why": section(text, "Why it is open"),
+            "options": opts,
+            "blocks": section(text, "Blocks"),
+            "resolution": section(text, "Resolution"),
+            "path": "docs/decisions/" + fn,
+        })
+    return out
+
+
 def read_stages():
     out = {}
     stages_dir = os.path.join(root, "docs", "stages")
@@ -55,7 +92,8 @@ def main():
     html = open(tpl_path).read()
     html = html.replace("__REPORT__", json.dumps(json.load(open(rep_path)), separators=(",", ":")))
     html = html.replace("__STAGES__", json.dumps(read_stages(), separators=(",", ":")))
-    if "__REPORT__" in html or "__STAGES__" in html:
+    html = html.replace("__DECISIONS__", json.dumps(read_decisions(), separators=(",", ":")))
+    if "__REPORT__" in html or "__STAGES__" in html or "__DECISIONS__" in html:
         sys.exit("placeholder left unreplaced")
 
     open(os.path.join(preview, "command.html"), "w").write(html)

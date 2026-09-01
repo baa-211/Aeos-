@@ -102,6 +102,7 @@ func check(root string) (reporting.Report, int) {
 
 	fs := validation.Validate(root, manifest, discovered)
 	fs = append(fs, validation.VersionConsistency(manifest.Project.Version, discovered)...)
+	fs = append(fs, validation.OpenDecisions(discovered)...)
 	if manifest.Security.SecretScanRequired {
 		secretFindings, scanErr := secrets.Scan(root, os.Getenv("AEOS_GITLEAKS_PATH"))
 		if scanErr != nil {

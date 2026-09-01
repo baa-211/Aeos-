@@ -4,7 +4,17 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
-## [0.0.12] — 2026-08-31
+## [0.0.13] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **`DECISION` record type.** Open questions are now records AEOS discovers, indexes and reference-checks like any other. Five seeded from real open questions in this project, one already accepted.
+- **`AEOS-DEC-001`.** `aeos check` reports unresolved decisions as INFO. Never blocking — an open decision is a healthy state; an invisible one is not.
+- **Decisions in the interface.** Each stage window lists the decisions waiting at that gate with their question, reasoning, options and what they block. Options are selectable, and the choice exports as a resolution block for the record.
+- **Attention marks.** A stage orb with a waiting decision carries a pulsing amber count, and the HUD shows the standing total. Verified that the interface count and the CLI finding count agree.
+- **Prompt composer.** Assembles your question together with the stage's purpose, principles, protocol, exit gate, open decisions and live findings into a copyable brief. Nothing is transmitted; the ROADMAP defers AI inside the validator, and a preview that called a model would be doing exactly that one layer up.
+
 
 Milestone: M6 (Dogfood) in progress.
 

@@ -123,6 +123,31 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
 
+/* ── decisions ── */
+.dec{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:14px 16px;margin:0 0 13px}
+.dec.settled{border-left-color:var(--moss);opacity:.72}
+.dec .dh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 8px}
+.dec .did{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.14em;color:var(--amber)}
+.dec.settled .did{color:var(--moss)}
+.dec h4{margin:0 0 8px;font-size:14px;font-weight:400;color:var(--marble)}
+.dec .q{font-size:13px;line-height:1.7;color:var(--marble-2);margin:0 0 10px}
+.dec .why{font-size:12.5px;line-height:1.7;color:var(--marble-3);margin:0 0 12px}
+.opt{display:block;width:100%;text-align:left;background:rgba(0,0,0,.24);border:1px solid var(--edge);
+  color:var(--marble-2);padding:10px 13px;margin:0 0 7px;cursor:pointer;font-family:inherit;
+  font-size:12.5px;line-height:1.65;font-weight:300}
+.opt:hover{border-color:var(--gilt);color:var(--marble)}
+.opt.picked{border-color:var(--gilt);background:rgba(201,162,39,.11);color:var(--marble)}
+.opt:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.opt b{color:var(--marble);font-weight:500}
+.blocks{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--oxide);margin:10px 0 0}
+
+/* ── attention marks ── */
+.bell{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+  padding:0 5px;border:1px solid var(--amber);color:var(--amber);
+  font-family:"IBM Plex Mono",monospace;font-size:9px;line-height:1;margin-left:8px}
+.win.needs .win-head{box-shadow:inset 3px 0 0 var(--amber)}
+
 /* ── comments ── */
 textarea.cmt{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--edge);
   color:var(--marble);font-family:"Spectral",Georgia,serif;font-size:13px;font-weight:300;
@@ -202,6 +227,7 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
   <p class="st"><span class="pip unk" id="pipResult"></span>Result <b id="vResult">unknown</b></p>
   <p class="st"><span class="pip unk" id="pipStage"></span>Stage <b id="vStage">unknown</b></p>
   <p class="st"><span class="pip unk"></span>Version <b id="vVersion">unknown</b></p>
+  <p class="st" id="decLine"><span class="pip unk" id="pipDec"></span>Decisions <b id="vDec">—</b></p>
 </div>
 
 <div class="hud mono" id="tr">
@@ -214,7 +240,7 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
   <h1>AEOS</h1>
 </div>
 
-<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb or press 1–8</div>
+<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb or press 1–8 · Amber marks a decision waiting</div>
 
 <div id="creed">
   <p class="k mono">Integrate · Orchestrate · Elevate</p>
@@ -232,6 +258,7 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
 <script>
 const REPORT = __REPORT__;
 const STAGES = __STAGES__;
+const DECISIONS = __DECISIONS__;
 
 const NAMES = {
  "STAGE-01-INTAKE":"Intake","STAGE-02-DESIGN":"Design","STAGE-03-BUILD":"Build",
@@ -308,6 +335,9 @@ function paintHud(){
   $("vCrit").textContent = s.critical ?? "—";
   $("pipCrit").className = "pip " + (s.critical>0?"bad":s.critical===0?"ok":"unk");
   $("vSchema").textContent = report.schema_version || "—";
+  const openN = totalOpenDecisions();
+  $("vDec").textContent = openN ? `${openN} awaiting` : "none open";
+  $("pipDec").className = "pip " + (openN ? "warn" : "ok");
 }
 
 /* ─────────── globe ─────────── */
@@ -689,6 +719,23 @@ function drawOrbs(rad, t){
 
     drawGlyph(o, o.glow);
 
+    // attention mark: a decision is waiting at this gate
+    const waiting = openDecisionsFor(o.id).length;
+    if(waiting){
+      const bx = o.x + o.r*0.94, by = o.y - o.r*0.94;
+      const beat = calm ? 1 : .74 + Math.sin(t/430 + i)*.26;
+      ctx.save();
+      ctx.shadowColor = `rgba(201,154,62,${.85*beat})`; ctx.shadowBlur = 10;
+      ctx.fillStyle = `rgba(201,154,62,${.92*beat})`;
+      ctx.beginPath(); ctx.arc(bx, by, Math.max(5.5, o.r*.26), 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "rgba(14,12,10,.95)";
+      ctx.font = `600 ${Math.max(7, o.r*.30)}px "IBM Plex Mono",monospace`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(String(waiting), bx, by+0.5);
+      ctx.textBaseline = "alphabetic";
+    }
+
     // ring marks the stage AEOS declares current
     if(isActive){
       ctx.strokeStyle=`rgba(${hr},${hg},${hb},${.42+(calm?0:Math.sin(t/620)*.18)})`;
@@ -917,6 +964,144 @@ function wireComments(w, id){
   renderNotes(w, id);
 }
 
+/* ─────────── decisions ─────────── */
+/* A decision is a record, not interface state. The window renders what the
+   record says and lets a choice be drafted; writing the resolution back into
+   the record is a person's act, exactly as with comments. */
+const SETTLED = new Set(["accepted","rejected","superseded","withdrawn","implemented"]);
+const PICK_KEY = id => "aeos.pick." + id;
+
+function loadPick(id){
+  try { return localStorage.getItem(PICK_KEY(id)) || ""; }
+  catch { return (window.__picks ||= {})[id] || ""; }
+}
+function savePick(id, v){
+  try { localStorage.setItem(PICK_KEY(id), v); }
+  catch { (window.__picks ||= {})[id] = v; }
+}
+
+function openDecisionsFor(stageId){
+  return (DECISIONS[stageId] || []).filter(d => !SETTLED.has(d.status));
+}
+function totalOpenDecisions(){
+  return Object.values(DECISIONS).flat().filter(d => !SETTLED.has(d.status)).length;
+}
+
+function renderDecision(d){
+  const settled = SETTLED.has(d.status);
+  const picked = loadPick(d.id);
+  const opts = d.options.map((o,i)=>{
+    const label = o.replace(/^\d+\.\s*/,"");
+    const mine = picked === String(i);
+    return `<button class="opt ${mine?"picked":""}" data-dec="${esc(d.id)}" data-opt="${i}">
+      ${label.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</button>`;
+  }).join("");
+  return `<div class="dec ${settled?"settled":""}">
+    <div class="dh"><span class="did">${esc(d.id)} \u00b7 ${esc(d.status)}${d.priority?" \u00b7 "+esc(d.priority):""}</span></div>
+    <h4>${esc(d.title)}</h4>
+    <p class="q">${esc(d.question)}</p>
+    <p class="why">${esc(d.why)}</p>
+    ${opts}
+    ${d.blocks && !/^nothing/i.test(d.blocks) ? `<p class="blocks">Blocks: ${esc(d.blocks)}</p>` : ""}
+    ${settled ? `<p class="why" style="margin:11px 0 0">${esc(d.resolution).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</p>` : ""}
+    <div class="cmt-row">
+      <button class="btn" data-a="dec-copy" data-dec="${esc(d.id)}">Copy resolution for record</button>
+    </div>
+    <p class="said" data-decsaid="${esc(d.id)}"></p>
+  </div>`;
+}
+
+function wireDecisions(w, stageId){
+  const decs = DECISIONS[stageId] || [];
+  w.el.querySelectorAll("[data-opt]").forEach(b => b.onclick = () => {
+    const id = b.dataset.dec;
+    const cur = loadPick(id);
+    const next = cur === b.dataset.opt ? "" : b.dataset.opt;
+    savePick(id, next);
+    w.el.querySelectorAll(`[data-dec="${id}"][data-opt]`).forEach(x =>
+      x.classList.toggle("picked", x.dataset.opt === next && next !== ""));
+    paintHud(); buildOrbs();
+  });
+
+  w.el.querySelectorAll('[data-a="dec-copy"]').forEach(b => b.onclick = async () => {
+    const d = decs.find(x => x.id === b.dataset.dec);
+    if(!d) return;
+    const pick = loadPick(d.id);
+    const chosen = pick === "" ? null : d.options[+pick];
+    const said = w.el.querySelector(`[data-decsaid="${d.id}"]`);
+    if(!chosen){ said.textContent = "Choose an option first."; setTimeout(()=>said.textContent="",3200); return; }
+    const md = `status: accepted\nupdated: ${today()}\n\n## Resolution\n**Accepted ${today()}: ${chosen.replace(/\*\*/g,"").replace(/^\d+\.\s*/,"")}**\n\n<why this option, and what it costs>\n`;
+    await copy(md, said, `Copied. Paste into ${d.path} and set the status.`);
+  });
+}
+
+async function copy(text, said, ok){
+  const flash = m => { if(said){ said.textContent = m; setTimeout(()=>{ said.textContent=""; }, 3600); } };
+  try { await navigator.clipboard.writeText(text); flash(ok); return; }
+  catch {}
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); flash(ok); }
+  catch { flash("Copy failed \u2014 select the text manually."); }
+  ta.remove();
+}
+
+/* ─────────── prompt composer ─────────── */
+/* Assembles a brief from real AEOS data. Nothing is sent anywhere: the
+   ROADMAP defers AI inside the validator, and a preview that called out to a
+   model would be doing exactly that from one layer up. */
+function buildBrief(stageId, question){
+  const s = STAGES[stageId], rec = (report.records||[]).find(r=>r.id===stageId);
+  const decs = openDecisionsFor(stageId);
+  const rel = (report.findings||[]).filter(f =>
+    stageId==="STAGE-05-SECURITY" ? /SEC/.test(f.rule)
+    : stageId==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
+
+  const L = [];
+  L.push(`# Brief \u2014 ${NAMES[stageId]||stageId}`);
+  L.push(``);
+  L.push(`Project: ${report.project?.name||"unknown"} (${report.project?.id||"?"}), level ${report.project?.level||"?"} / ${report.project?.security_level||"?"}`);
+  L.push(`Declared current stage: ${activeStage ? (NAMES[activeStage]||activeStage) : "undeclared"}`);
+  L.push(`Check result: ${report.result||"UNKNOWN"} \u2014 ${report.summary?.critical??"?"} critical, ${report.summary?.errors??"?"} errors, ${report.summary?.warnings??"?"} warnings`);
+  if(rec) L.push(`Stage record: ${rec.path}`);
+  L.push(``);
+  L.push(`## Question`);
+  L.push(question || "(none given)");
+  if(s){
+    L.push(``, `## This stage's purpose`, s.purpose);
+    if(s.principles?.length) L.push(``, `## Principles that constrain the answer`,
+      ...s.principles.map(x=>"- "+x.replace(/^\d+\.\s*/,"")));
+    if(s.protocol?.length) L.push(``, `## Protocol`,
+      ...s.protocol.map(x=>"- "+x.replace(/^\d+\.\s*/,"")));
+    if(s.gate?.length) L.push(``, `## Exit gate \u2014 what must be true to leave this stage`,
+      ...s.gate.map(x=>"- "+x));
+  }
+  if(decs.length){
+    L.push(``, `## Open decisions at this gate`);
+    decs.forEach(d=>{
+      L.push(``, `### ${d.id} \u2014 ${d.title}`, d.question);
+      d.options.forEach(o=>L.push("- "+o.replace(/\*\*/g,"")));
+    });
+  }
+  L.push(``, `## Findings AEOS reports at this gate`);
+  L.push(rel.length ? rel.map(f=>`- ${f.severity} ${f.rule}: ${f.message}`).join("\n")
+    : "None. AEOS has automated checks for the Security and Report gates only; the other six report unknown rather than passing.");
+  L.push(``, `---`, `Assembled from AEOS report schema ${report.schema_version||"?"}. Nothing here was inferred by the interface.`);
+  return L.join("\n");
+}
+
+function wirePrompt(w, stageId){
+  const ta = w.el.querySelector("[data-prompt]");
+  const said = w.el.querySelector("[data-pmsg]");
+  w.el.querySelector('[data-a="brief"]').onclick = () =>
+    copy(buildBrief(stageId, ta.value.trim()), said, "Full brief copied.");
+  w.el.querySelector('[data-a="brief-short"]').onclick = () => {
+    if(!ta.value.trim()){ said.textContent="Write a question first."; setTimeout(()=>said.textContent="",3200); return; }
+    copy(ta.value.trim(), said, "Question copied.");
+  };
+}
+
 /* ─────────── stage window ─────────── */
 function showStage(id){
   const s = STAGES[id];
@@ -949,6 +1134,28 @@ function showStage(id){
   }
 
   // comments on the work at this stage
+  // decisions waiting at this gate
+  const decs = DECISIONS[id] || [];
+  const openDecs = decs.filter(d => !SETTLED.has(d.status));
+  if(decs.length){
+    html += `<div class="blk"><h3>Decisions at this gate` +
+      (openDecs.length ? ` \u00b7 <span style="color:var(--amber)">${openDecs.length} awaiting a choice</span>` : " \u00b7 all settled") +
+      `</h3>` + decs.map(renderDecision).join("") + `</div>`;
+  }
+
+  // prompt composer
+  html += `<div class="blk"><h3>Compose a prompt for this stage</h3>
+      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 10px">
+        Your question, wrapped in this stage&rsquo;s protocol, exit gate, open decisions and current findings.
+        Nothing is sent anywhere \u2014 the brief is assembled here for you to paste wherever you want it answered.</p>
+      <textarea class="cmt" data-prompt placeholder="What do you want asked or done at this stage?"></textarea>
+      <div class="cmt-row">
+        <button class="btn primary" data-a="brief">Copy full brief</button>
+        <button class="btn" data-a="brief-short">Copy question only</button>
+      </div>
+      <p class="said" data-pmsg></p>
+    </div>`;
+
   html += `<div class="blk"><h3>Comments on this stage's work</h3>
       <input class="cmt-t" data-title placeholder="Short title — what this is about">
       <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
@@ -990,6 +1197,9 @@ function showStage(id){
   }
 
   wireComments(w, id);
+  wireDecisions(w, id);
+  wirePrompt(w, id);
+  if(openDecisionsFor(id).length) w.el.classList.add("needs");
 }
 
 /* ─────────── drop intake ─────────── */
