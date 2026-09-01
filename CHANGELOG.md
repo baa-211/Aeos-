@@ -4,6 +4,16 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.11] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Changed
+- **Removed the light shaft.** The cone of light anchoring the globe to the floor read as a stray triangle rather than illumination. The globe is now suspended, drifting on a slow vertical cycle, and rises slightly while a drag is in flight.
+- **The platform is a marble slab.** Layered stone gradient lit from the upper left, five irregular veins, fine grain, a polished rim catching the chamber light, and a cast shadow grounding it. The stone body is static, so it renders once to an offscreen canvas and is blitted per frame; only the light animates.
+- **Orbits are light inlaid in the stone.** Each ring is a dark groove cut into the marble with light lying inside it — a shadowed cut, a warm bed, a bright core — rather than a line drawn on the surface. Twelve quieter radial channels run outward, and the suspended globe pools light on the stone beneath it.
+- **The plate is sized from the orb layout** rather than a fixed multiple of the globe. Orbs previously overflowed the slab edge at four of five viewport sizes.
+
 ## [0.0.10] — 2026-08-31
 
 Milestone: M6 (Dogfood) in progress.

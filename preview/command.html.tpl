@@ -287,7 +287,7 @@ function paintHud(){
 const cv = $("scene"), ctx = cv.getContext("2d", {alpha:true});
 let W=0,H=0,DPR=1, cx=0, cy=0, R=0;
 let yaw=0, pitch=-.16, tYaw=0, tPitch=-.16;
-let mx=-9e9, my=-9e9, hoverOrb=-1, breathing=0, dropping=false;
+let mx=-9e9, my=-9e9, hoverOrb=-1, breathing=0, dropping=false, gy=0, bob=0;
 const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function resize(){
@@ -299,7 +299,7 @@ function resize(){
   cx = W/2; cy = H*0.355;
   R = Math.min(W*0.17, H*0.235, 228);
 }
-addEventListener("resize", resize);
+addEventListener("resize", ()=>{ resize(); plateKey=""; });
 
 /* voxels: a fibonacci sphere, tinted by the records the engine actually holds */
 const VOX = [];
@@ -346,28 +346,30 @@ function project(p, sy, cyaw, sp, cp){
 
 function frame(t){
   ctx.clearRect(0,0,W,H);
-  if(!calm){ tYaw += .0016; breathing = Math.sin(t/1750)*.5+.5; }
+  if(!calm){ tYaw += .0016; breathing = Math.sin(t/1750)*.5+.5; bob = Math.sin(t/2600); }
 
   yaw   += (tYaw   - yaw)   * .05;
   pitch += (tPitch - pitch) * .06;
 
   const sy=Math.sin(yaw), cyaw=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
   const rad = R * (1 + breathing*.012 + (dropping?.075:0));
+  gy = cy + bob*rad*.035 - (dropping ? rad*.05 : 0);   // suspended, never resting
 
-  drawPlatform(rad);
+  const B = layoutOrbs(rad);
+  drawPlate(rad, t, B);
 
   /* halo */
-  const halo = ctx.createRadialGradient(cx,cy,rad*.55,cx,cy,rad*2.15);
+  const halo = ctx.createRadialGradient(cx,gy,rad*.55,cx,gy,rad*2.15);
   halo.addColorStop(0,`rgba(232,203,114,${.15+breathing*.05+(dropping?.14:0)})`);
   halo.addColorStop(1,"rgba(232,203,114,0)");
-  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(cx,cy,rad*2.15,0,7); ctx.fill();
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(cx,gy,rad*2.15,0,7); ctx.fill();
 
   /* voxels */
   const pts = [];
   for(const v of VOX){
     const p = project(v, sy, cyaw, sp, cp);
     const persp = 1/(1 + p.z*.34);
-    const sx = cx + p.x*rad*persp, syy = cy + p.y*rad*persp;
+    const sx = cx + p.x*rad*persp, syy = gy + p.y*rad*persp;
     // cursor repulsion: the surface answers the pointer
     const dx = sx-mx, dy = syy-my, d2 = dx*dx+dy*dy;
     const near = d2 < 12000 && p.z > -.35;
@@ -383,34 +385,139 @@ function frame(t){
     const boost = p.lift*.9 + (dropping?.3:0);
     const sz = Math.max(.9, 3.5*p.v.s*p.persp*(1+p.lift*.6));
     const off = p.lift*13;
-    const nx = p.sx + (p.sx-cx)*off/rad, ny = p.syy + (p.syy-cy)*off/rad;
+    const nx = p.sx + (p.sx-cx)*off/rad, ny = p.syy + (p.syy-gy)*off/rad;
     ctx.fillStyle = `rgba(${Math.min(255,r+boost*150)|0},${Math.min(255,g+boost*130)|0},${Math.min(255,b+boost*80)|0},${Math.min(1,shade+boost*.55)})`;
     ctx.fillRect(nx-sz/2, ny-sz/2, sz, sz);
   }
-
-  /* light shaft to the floor */
-  const shaft = ctx.createLinearGradient(cx,cy+rad*.55,cx,cy+rad*1.9);
-  shaft.addColorStop(0,`rgba(232,203,114,${.3+breathing*.09})`);
-  shaft.addColorStop(1,"rgba(232,203,114,0)");
-  ctx.fillStyle=shaft;
-  ctx.beginPath(); ctx.moveTo(cx-rad*.10,cy+rad*.5);
-  ctx.lineTo(cx+rad*.10,cy+rad*.5); ctx.lineTo(cx+rad*.62,cy+rad*1.9);
-  ctx.lineTo(cx-rad*.62,cy+rad*1.9); ctx.closePath(); ctx.fill();
 
   drawOrbs(rad, t);
   requestAnimationFrame(frame);
 }
 
-function drawPlatform(rad){
-  const py = cy + rad*1.30, rx = rad*2.62, ry = rad*.5;
-  ctx.save();
-  ctx.strokeStyle="rgba(201,162,39,.2)"; ctx.lineWidth=1;
-  for(let k=1;k<=3;k++){
-    ctx.beginPath(); ctx.ellipse(cx,py,rx*(.52+k*.17),ry*(.52+k*.17),0,0,7); ctx.stroke();
+/* The plate is a slab of marble. Its base — stone, veining, polished rim — is
+   static, so it is rendered once to an offscreen canvas and blitted each frame.
+   Only the light inlaid in its channels animates. */
+let plateCache = null, plateKey = "";
+
+function buildPlate(rad, B){
+  const rx = B.rx, ry = B.ry;
+  const pad = 26;
+  const w = Math.ceil((rx+pad)*2), h = Math.ceil((ry+pad)*2);
+  const off = document.createElement("canvas");
+  off.width = w*DPR; off.height = h*DPR;
+  const c = off.getContext("2d");
+  c.setTransform(DPR,0,0,DPR,0,0);
+  const ox = w/2, oy = h/2;
+
+  c.save();
+  c.beginPath(); c.ellipse(ox,oy,rx,ry,0,0,7); c.clip();
+
+  // stone body: lit from the upper left, falling into shadow at the far rim
+  const body = c.createLinearGradient(ox-rx*.6, oy-ry, ox+rx*.5, oy+ry);
+  body.addColorStop(0,   "#4A4239");
+  body.addColorStop(0.34,"#3A332C");
+  body.addColorStop(0.72,"#272119");
+  body.addColorStop(1,   "#191410");
+  c.fillStyle = body;
+  c.fillRect(0,0,w,h);
+
+  // veining — quiet, irregular, never symmetrical
+  const veins = [
+    [-1.00,-0.30, -0.30,-0.62, 0.34,-0.16, 1.00,-0.44, 0.34],
+    [-1.00, 0.42, -0.36, 0.10, 0.22, 0.56, 1.00, 0.20, 0.26],
+    [-0.86,-0.72, -0.10,-0.20, 0.40,-0.74, 0.92,-0.30, 0.20],
+    [-0.70, 0.80, -0.02, 0.34, 0.46, 0.86, 1.00, 0.62, 0.16],
+    [-1.00, 0.02, -0.42,-0.34, 0.30, 0.30, 1.00,-0.06, 0.22]
+  ];
+  c.lineCap = "round";
+  for(const [x1,y1,cx1,cy1,cx2,cy2,x2,y2,a] of veins){
+    c.beginPath();
+    c.moveTo(ox+x1*rx, oy+y1*ry);
+    c.bezierCurveTo(ox+cx1*rx, oy+cy1*ry, ox+cx2*rx, oy+cy2*ry, ox+x2*rx, oy+y2*ry);
+    c.strokeStyle = `rgba(214,204,186,${a*0.5})`; c.lineWidth = 1.6; c.stroke();
+    c.strokeStyle = `rgba(232,224,210,${a*0.22})`; c.lineWidth = 0.7; c.stroke();
   }
-  const fl = ctx.createRadialGradient(cx,py,0,cx,py,rx);
-  fl.addColorStop(0,"rgba(232,224,210,.075)"); fl.addColorStop(1,"rgba(232,224,210,0)");
-  ctx.fillStyle=fl; ctx.beginPath(); ctx.ellipse(cx,py,rx,ry,0,0,7); ctx.fill();
+
+  // fine grain so the stone is not flat
+  for(let i=0;i<340;i++){
+    const a = Math.random()*6.283, r = Math.sqrt(Math.random());
+    c.fillStyle = `rgba(232,224,210,${Math.random()*0.05})`;
+    c.fillRect(ox+Math.cos(a)*r*rx, oy+Math.sin(a)*r*ry, 1.4, 1.4);
+  }
+
+  // sheen across the polished face
+  const sheen = c.createLinearGradient(ox-rx, oy-ry*.8, ox+rx*.3, oy+ry);
+  sheen.addColorStop(0,"rgba(255,248,232,.085)");
+  sheen.addColorStop(.42,"rgba(255,248,232,.015)");
+  sheen.addColorStop(1,"rgba(0,0,0,.16)");
+  c.fillStyle = sheen; c.fillRect(0,0,w,h);
+  c.restore();
+
+  // polished edge catching the chamber light
+  c.beginPath(); c.ellipse(ox,oy,rx,ry,0,0,7);
+  c.strokeStyle = "rgba(226,214,192,.34)"; c.lineWidth = 1.4; c.stroke();
+  c.beginPath(); c.ellipse(ox,oy,rx-2.2,ry-2.2,0,0,7);
+  c.strokeStyle = "rgba(0,0,0,.34)"; c.lineWidth = 2; c.stroke();
+
+  return {canvas:off, w, h, rx, ry};
+}
+
+function drawPlate(rad, t, B){
+  const py = B.cy;
+  const key = `${Math.round(B.rx)}x${Math.round(B.ry)}x${Math.round(py)}x${DPR}`;
+  if(plateKey !== key){ plateCache = buildPlate(rad, B); plateKey = key; }
+  const P = plateCache;
+
+  // slab shadow, grounding it in the chamber
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,.5)";
+  ctx.beginPath(); ctx.ellipse(cx, py+rad*.10, P.rx*.98, P.ry*.9, 0, 0, 7); ctx.fill();
+  ctx.restore();
+
+  ctx.drawImage(P.canvas, cx-P.w/2, py-P.h/2, P.w, P.h);
+
+  // ── light inlaid in the channels ──
+  // A groove cut into the stone, with light lying inside it. The dark line
+  // is the cut; the bright line is what fills it.
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(cx,py,P.rx,P.ry,0,0,7); ctx.clip();
+
+  const rings = [0.40, 0.60, 0.80, 0.965];
+  rings.forEach((f,i)=>{
+    const rx = P.rx*f, ry = P.ry*f;
+    const live = calm ? 1 : 0.82 + Math.sin(t/1900 + i*1.15)*0.18;
+    const lit  = live * (dropping ? 1.5 : 1);
+
+    ctx.beginPath(); ctx.ellipse(cx,py+1.4,rx,ry,0,0,7);
+    ctx.strokeStyle = "rgba(0,0,0,.52)"; ctx.lineWidth = 3.2; ctx.stroke();
+
+    ctx.save();
+    ctx.shadowColor = `rgba(232,203,114,${.5*lit})`;
+    ctx.shadowBlur = 11;
+    ctx.beginPath(); ctx.ellipse(cx,py,rx,ry,0,0,7);
+    ctx.strokeStyle = `rgba(201,162,39,${.34*lit})`; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,py,rx,ry,0,0,7);
+    ctx.strokeStyle = `rgba(255,240,196,${.62*lit})`; ctx.lineWidth = .9; ctx.stroke();
+    ctx.restore();
+  });
+
+  // radial channels, quieter than the rings
+  for(let k=0;k<12;k++){
+    const a = (k/12)*6.283;
+    const live = calm ? .5 : .35 + Math.sin(t/2300 + k*.5)*.18;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*P.rx*.42, py+Math.sin(a)*P.ry*.42);
+    ctx.lineTo(cx+Math.cos(a)*P.rx*1.0, py+Math.sin(a)*P.ry*1.0);
+    ctx.strokeStyle = `rgba(201,162,39,${.16*live})`; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  // the suspended globe pools light on the stone beneath it
+  const pool = ctx.createRadialGradient(cx, py, 0, cx, py, P.rx*.62);
+  pool.addColorStop(0, `rgba(232,203,114,${.20+breathing*.05+(dropping?.14:0)})`);
+  pool.addColorStop(.45,`rgba(232,203,114,${.06+breathing*.02})`);
+  pool.addColorStop(1,  "rgba(232,203,114,0)");
+  ctx.fillStyle = pool;
+  ctx.beginPath(); ctx.ellipse(cx,py,P.rx*.62,P.ry*.62,0,0,7); ctx.fill();
   ctx.restore();
 }
 
@@ -483,37 +590,49 @@ function drawGlyph(o, lum){
   ctx.restore();
 }
 
-function drawOrbs(rad, t){
-  /* Orbs sit on the FRONT rim of the platform, entirely below the globe, so
-     nothing they need for interaction is ever occluded by the sphere. */
-  const py = cy + rad*1.34, rx = Math.min(W*0.40, rad*2.75), ry = rad*.30;
-  const tight = W < 700;   // no room for word labels; glyph and number carry it
+function layoutOrbs(rad){
+  const py = cy + rad*1.34, rx = Math.min(W*0.38, rad*2.5), ry = rad*.30;
+  const tight = W < 700;
   const n = ORBS.length || 8;
   ORBS.forEach((o,i)=>{
+    o.r = (tight ? Math.min(W*0.062, 25) : rad*.132) * (1 + o.glow*.10);
     if(tight){
-      // Two rows of four. Shrinking eight onto one arc would make them
-      // smaller than a fingertip; splitting keeps every orb reachable.
-      const row = Math.floor(i/4), col = i%4;
+      const col = i%4, row = Math.floor(i/4);
       const gap = Math.min(W*0.22, 92);
       o.x = cx + (col-1.5)*gap;
-      o.y = py + rad*.18 + row*Math.min(W*0.20, 84);
+      o.y = py + rad*.10 + row*Math.min(W*0.20, 84);
     } else {
-      const a = Math.PI - Math.PI*(i+.5)/n; // left to right along the near edge
+      const a = Math.PI - Math.PI*(i+.5)/n;
       o.x = cx + Math.cos(a)*rx;
       o.y = py + Math.sin(a)*ry;
     }
+  });
+  const xs = ORBS.map(o=>o.x), ys = ORBS.map(o=>o.y);
+  const pad = (ORBS[0] ? ORBS[0].r : rad*.13) * 2.4;
+  const midY = (Math.min(...ys) + Math.max(...ys)) / 2;
+  return {
+    tight,
+    cy: midY,
+    rx: Math.max(rad*2.4, Math.max(...xs.map(x=>Math.abs(x-cx))) + pad),
+    ry: Math.max(rad*0.5,  Math.max(...ys.map(y=>Math.abs(y-midY))) + pad*0.9)
+  };
+}
 
+function drawOrbs(rad, t){
+  /* Orbs sit on the FRONT rim of the platform, entirely below the globe, so
+     nothing they need for interaction is ever occluded by the sphere. */
+  const tight = W < 700;   // no room for word labels; glyph and number carry it
+  ORBS.forEach((o,i)=>{
     const isActive = o.id === activeStage, isOpen = o.id === openStage;
     const target = (isActive?1:.34) + (i===hoverOrb?.5:0) + (isOpen?.4:0);
     o.glow += (Math.min(1.7,target) - o.glow)*.12;
-    o.r = (tight ? Math.min(W*0.062, 25) : rad*.132) * (1 + o.glow*.10);
 
     const [hr,hg,hb] = o.hue;
 
     // seated shadow, so each orb rests on the rim rather than floating
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,.34)";
-    ctx.beginPath(); ctx.ellipse(o.x, o.y+o.r*1.16, o.r*.95, o.r*.24, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(o.x, o.y+o.r*1.10, o.r*.88, o.r*.20, 0, 0, 7); ctx.fill();
     ctx.restore();
 
     // aura in the stage's own hue
