@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AEOS — Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Spectral:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --stone:#0F0D0B; --stone-2:#1A1613; --stone-3:#262019;
+  --marble:#E8E0D2; --marble-2:#BDB2A0; --marble-3:#8A8073;
+  --gilt:#C9A227; --gilt-lit:#E8CB72; --gilt-dim:#7A6520;
+  --moss:#7E9068; --oxide:#B4573A; --amber:#C99A3E;
+  --edge:rgba(201,162,39,.16); --edge-2:rgba(232,224,210,.09);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--stone);color:var(--marble);overflow:hidden;
+  font-family:"Spectral",Georgia,serif;font-weight:300;-webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",monospace;letter-spacing:.16em;text-transform:uppercase}
+
+/* ── chamber ── */
+#chamber{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(78% 58% at 50% 40%,rgba(201,162,39,.13) 0%,rgba(201,162,39,0) 62%),
+  radial-gradient(120% 78% at 50% 112%,rgba(232,224,210,.09) 0%,rgba(232,224,210,0) 55%),
+  radial-gradient(58% 44% at 12% 8%,rgba(232,203,114,.09) 0%,rgba(0,0,0,0) 62%),
+  radial-gradient(58% 44% at 88% 8%,rgba(232,203,114,.07) 0%,rgba(0,0,0,0) 62%),
+  linear-gradient(178deg,#0B0A08 0%,#141110 46%,#1E1915 100%)}
+#arches{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.4}
+#grain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.32;mix-blend-mode:overlay}
+
+/* ── stage ── */
+#scene{position:fixed;inset:0;z-index:3;display:block;touch-action:none}
+
+/* ── chrome ── */
+.hud{position:fixed;z-index:6}
+#tl{top:26px;left:30px}
+#tr{top:26px;right:30px;text-align:right}
+.st{display:flex;align-items:center;gap:9px;font-size:10px;color:var(--marble-3);margin:0 0 6px}
+#tr .st{justify-content:flex-end}
+.st b{color:var(--marble);font-weight:500}
+.pip{width:5px;height:5px;border-radius:50%;flex:none;background:var(--marble-3)}
+.pip.ok{background:var(--moss);box-shadow:0 0 7px rgba(126,144,104,.8)}
+.pip.warn{background:var(--amber);box-shadow:0 0 7px rgba(201,154,62,.8)}
+.pip.bad{background:var(--oxide);box-shadow:0 0 7px rgba(180,87,58,.85)}
+.pip.unk{background:transparent;border:1px solid var(--marble-3)}
+
+#title{position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:6;text-align:center;pointer-events:none}
+#title h1{font-family:"Cinzel",serif;font-weight:400;font-size:clamp(20px,2.7vw,34px);
+  letter-spacing:.5em;text-indent:.5em;margin:0;color:var(--marble);
+  text-shadow:0 0 26px rgba(232,203,114,.34)}
+#title p{margin:9px 0 0;font-size:8.5px;letter-spacing:.34em;color:var(--marble-3)}
+
+#creed{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;
+  text-align:center;pointer-events:none;width:min(94vw,760px)}
+#creed .k{font-size:8.5px;letter-spacing:.44em;color:var(--gilt-dim)}
+#creed .v{margin:9px 0 0;font-size:12px;font-style:italic;color:var(--marble-3)}
+
+/* ── panels ── */
+.panel{
+  position:fixed;z-index:8;width:min(94vw,430px);
+  background:linear-gradient(174deg,rgba(26,22,19,.97),rgba(15,13,11,.98));
+  border:1px solid var(--edge);backdrop-filter:blur(11px);
+  box-shadow:0 26px 70px rgba(0,0,0,.62);
+  display:none;max-height:78vh;overflow-y:auto;overscroll-behavior:contain}
+.panel.open{display:block}
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-thumb{background:var(--gilt-dim)}
+#stagePanel{top:50%;right:30px;transform:translateY(-50%)}
+#dropPanel{top:50%;left:50%;transform:translate(-50%,-50%);width:min(94vw,540px)}
+.ph{padding:18px 22px;border-bottom:1px solid var(--edge-2);
+  display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
+  position:sticky;top:0;background:rgba(15,13,11,.97);z-index:1}
+.ph .id{font-size:8.5px;color:var(--gilt);margin:0 0 6px}
+.ph h2{font-family:"Cinzel",serif;font-size:16px;font-weight:500;letter-spacing:.1em;margin:0;color:var(--marble)}
+.x{background:none;border:1px solid var(--edge);color:var(--marble-3);
+  width:26px;height:26px;flex:none;cursor:pointer;font-size:14px;line-height:1;font-family:inherit}
+.x:hover{color:var(--marble);border-color:var(--gilt)}
+.x:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.pb{padding:18px 22px 24px}
+.blk{margin:0 0 20px}
+.blk:last-child{margin:0}
+.blk>h3{font-size:8.5px;color:var(--gilt-dim);margin:0 0 9px;font-family:"IBM Plex Mono",monospace;
+  letter-spacing:.2em;text-transform:uppercase;font-weight:500}
+.blk p{margin:0;font-size:13.5px;line-height:1.75;color:var(--marble-2)}
+.blk ol,.blk ul{margin:0;padding-left:17px;font-size:12.5px;line-height:1.85;color:var(--marble-2)}
+.blk li{margin:0 0 4px}
+.mem{border-left:2px solid var(--gilt-dim);padding:2px 0 2px 13px;margin:0 0 15px}
+.mem .d{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.13em;color:var(--gilt-dim)}
+.mem .t{font-size:13px;color:var(--marble);margin:4px 0 5px;font-weight:400}
+.mem .b{font-size:12.5px;line-height:1.75;color:var(--marble-3);margin:0}
+.tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.14em;
+  text-transform:uppercase;border:1px solid var(--edge);padding:3px 8px;color:var(--marble-3);margin:0 5px 5px 0}
+.tag.on{border-color:var(--gilt);color:var(--gilt-lit)}
+.tag.unk{border-style:dashed}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td{padding:7px 8px;border-bottom:1px solid var(--edge-2);color:var(--marble-2);vertical-align:top}
+td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--marble-3);white-space:nowrap;width:33%}
+.note{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:13px 15px;
+  font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
+.note b{color:var(--marble);font-weight:500}
+
+/* ── drop ── */
+#dropZone{position:fixed;inset:0;z-index:7;display:none;place-items:center;
+  background:radial-gradient(58% 45% at 50% 50%,rgba(201,162,39,.11),rgba(11,10,8,.9))}
+#dropZone.on{display:grid}
+#dropZone .msg{text-align:center;pointer-events:none}
+#dropZone .ring{width:250px;height:250px;border:1px dashed var(--gilt);border-radius:50%;
+  margin:0 auto 26px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.055);opacity:1}}
+#dropZone h2{font-family:"Cinzel",serif;font-size:19px;letter-spacing:.22em;margin:0;color:var(--gilt-lit)}
+#dropZone p{margin:11px 0 0;font-size:11px;letter-spacing:.16em;color:var(--marble-3);
+  font-family:"IBM Plex Mono",monospace;text-transform:uppercase}
+
+#hint{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:6;
+  font-size:8.5px;letter-spacing:.24em;color:var(--marble-3);opacity:.62;pointer-events:none;
+  font-family:"IBM Plex Mono",monospace;text-transform:uppercase;text-align:center}
+
+@media (prefers-reduced-motion:reduce){#dropZone .ring{animation:none}}
+@media (max-width:760px){
+  #stagePanel{right:auto;left:50%;top:auto;bottom:0;transform:translateX(-50%);
+    width:100vw;max-height:66vh;border-left:0;border-right:0;border-bottom:0}
+  #tl,#tr{font-size:9px} #tr{right:16px} #tl{left:16px}
+  #creed .v{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="chamber"></div>
+<svg id="arches" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1440 900">
+  <defs>
+    <linearGradient id="col" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3A322A" stop-opacity=".85"/>
+      <stop offset="55%" stop-color="#241E19" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#141110" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8CB72" stop-opacity=".26"/>
+      <stop offset="100%" stop-color="#E8CB72" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#col)">
+    <path d="M40 900 L40 300 Q40 190 130 190 Q220 190 220 300 L220 900 Z"/>
+    <path d="M1220 900 L1220 300 Q1220 190 1310 190 Q1400 190 1400 300 L1400 900 Z"/>
+    <path d="M300 900 L300 250 Q300 120 400 120 Q500 120 500 250 L500 900 Z" opacity=".55"/>
+    <path d="M940 900 L940 250 Q940 120 1040 120 Q1140 120 1140 250 L1140 900 Z" opacity=".55"/>
+  </g>
+  <g fill="url(#glow)">
+    <path d="M230 900 L230 300 Q230 200 295 200 L295 900 Z"/>
+    <path d="M1145 900 L1145 300 Q1145 200 1210 200 L1210 900 Z"/>
+  </g>
+</svg>
+<svg id="grain" aria-hidden="true"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="3" seed="11"/><feColorMatrix values="0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 -1.15 .6"/></filter><rect width="100%" height="100%" filter="url(#g)"/></svg>
+
+<canvas id="scene" aria-label="AEOS engine globe and pipeline stages"></canvas>
+
+<div class="hud mono" id="tl">
+  <p class="st"><span class="pip unk" id="pipResult"></span>Result <b id="vResult">unknown</b></p>
+  <p class="st"><span class="pip unk" id="pipStage"></span>Stage <b id="vStage">unknown</b></p>
+  <p class="st"><span class="pip unk"></span>Version <b id="vVersion">unknown</b></p>
+</div>
+
+<div class="hud mono" id="tr">
+  <p class="st">Records <b id="vRecords">—</b><span class="pip unk"></span></p>
+  <p class="st">Critical <b id="vCrit">—</b><span class="pip unk" id="pipCrit"></span></p>
+  <p class="st">Schema <b id="vSchema">—</b><span class="pip unk"></span></p>
+</div>
+
+<div id="title">
+  <h1>AEOS</h1>
+  <p class="mono">Personal Engineering Command System</p>
+</div>
+
+<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb</div>
+
+<div id="creed">
+  <p class="k mono">Integrate · Orchestrate · Elevate</p>
+  <p class="v">It reports what it knows, and says so when it does not.</p>
+</div>
+
+<div id="dropZone">
+  <div class="msg"><div class="ring"></div>
+    <h2>RELEASE TO BEGIN INTAKE</h2>
+    <p>Nothing is written. AEOS will propose, not act.</p></div>
+</div>
+
+<section class="panel" id="stagePanel" role="dialog" aria-modal="false" aria-labelledby="spTitle">
+  <div class="ph"><div><p class="id mono" id="spId"></p><h2 id="spTitle"></h2></div>
+    <button class="x" id="spClose" aria-label="Close">×</button></div>
+  <div class="pb" id="spBody"></div>
+</section>
+
+<section class="panel" id="dropPanel" role="dialog" aria-modal="false" aria-labelledby="dpTitle">
+  <div class="ph"><div><p class="id mono">Intake · Proposal</p><h2 id="dpTitle">Received</h2></div>
+    <button class="x" id="dpClose" aria-label="Close">×</button></div>
+  <div class="pb" id="dpBody"></div>
+</section>
+
+<script>
+const REPORT = {"schema_version":"0.3","project":{"id":"AEOS-CLI","name":"aeos-cli","level":"B","security_level":"S2"},"pipeline":{"current_stage":"STAGE-03-BUILD"},"manifest_path":"aeos.yaml","summary":{"records_discovered":27,"info":0,"warnings":0,"errors":0,"critical":0},"records":[{"type":"ADR","id":"ADR-001","status":"accepted","path":"docs/adr/ADR-001-go-cli.md"},{"type":"ADR","id":"ADR-002","status":"accepted","path":"docs/adr/ADR-002-m1-manifest-parser.md"},{"type":"ADR","id":"ADR-003","status":"accepted","path":"docs/adr/ADR-003-secret-scanner.md"},{"type":"ADR","id":"ADR-004","status":"accepted","path":"docs/adr/ADR-004-pipeline-stages.md"},{"type":"AUDIT","id":"AUDIT-001","status":"completed","path":"docs/audits/AUDIT-001-pre-publish.md"},{"type":"PROJECT","id":"AEOS-CLI","status":"development","path":"PROJECT.md"},{"type":"REQ","id":"REQ-CLI-001","status":"accepted","path":"docs/requirements/REQ-CLI-001-load-project-manifest.md"},{"type":"REQ","id":"REQ-CLI-002","status":"accepted","path":"docs/requirements/REQ-CLI-002-discover-aeos-records.md"},{"type":"REQ","id":"REQ-CLI-003","status":"accepted","path":"docs/requirements/REQ-CLI-003-validate-unique-ids.md"},{"type":"REQ","id":"REQ-CLI-004","status":"accepted","path":"docs/requirements/REQ-CLI-004-validate-references.md"},{"type":"REQ","id":"REQ-CLI-005","status":"accepted","path":"docs/requirements/REQ-CLI-005-validate-required-project-files.md"},{"type":"REQ","id":"REQ-CLI-006","status":"accepted","path":"docs/requirements/REQ-CLI-006-status-staleness.md"},{"type":"REQ","id":"REQ-CLI-007","status":"implemented","path":"docs/requirements/REQ-CLI-007-console-reporter.md"},{"type":"REQ","id":"REQ-CLI-008","status":"implemented","path":"docs/requirements/REQ-CLI-008-json-reporter.md"},{"type":"REQ","id":"REQ-CLI-009","status":"implemented","path":"docs/requirements/REQ-CLI-009-exit-codes.md"},{"type":"REQ","id":"REQ-CLI-010","status":"implemented","path":"docs/requirements/REQ-CLI-010-record-discovery.md"},{"type":"REQ","id":"REQ-CLI-011","status":"implemented","path":"docs/requirements/REQ-CLI-011-integrity-validation.md"},{"type":"REQ","id":"REQ-CLI-012","status":"implemented","path":"docs/requirements/REQ-CLI-012-secret-scanning.md","references":["ADR-003"]},{"type":"STAGE","id":"STAGE-01-INTAKE","status":"active","path":"docs/stages/STAGE-01-INTAKE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-02-DESIGN","status":"active","path":"docs/stages/STAGE-02-DESIGN.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-03-BUILD","status":"active","path":"docs/stages/STAGE-03-BUILD.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-04-QA","status":"active","path":"docs/stages/STAGE-04-QA.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-05-SECURITY","status":"active","path":"docs/stages/STAGE-05-SECURITY.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-06-COMPLIANCE","status":"active","path":"docs/stages/STAGE-06-COMPLIANCE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-07-RELEASE","status":"active","path":"docs/stages/STAGE-07-RELEASE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-08-REPORT","status":"active","path":"docs/stages/STAGE-08-REPORT.md","references":["ADR-004"]},{"type":"STATUS","id":"STATUS","path":"STATUS.md"}],"findings":[],"result":"PASS"};
+const STAGES = {"STAGE-01-INTAKE":{"purpose":"Capture what is actually being asked before anything is designed or built. Intake exists to prevent the most expensive class of failure: building the wrong thing correctly.","principles":["1. Ambiguity is a finding, not an inconvenience. An unclear request is recorded as unclear rather than resolved by assumption.","2. The requester's words are evidence. Restating a request in more convenient terms is how scope quietly changes owner.","3. Nothing enters the pipeline unclassified. A change with no level, no security level and no owner cannot be gated later.","4. Say no early. Rejecting work at Intake costs a conversation; rejecting it at Release costs a rollback."],"protocol":["1. Record the request verbatim, with its source and date.","2. Identify what is being asked for and what is being assumed.","3. Classify: change type, project level, security level, data classification.","4. Name the smallest outcome that would satisfy the request.","5. List what is unknown. Do not fill gaps with plausible guesses.","6. Check the request against `ROADMAP.md` priority rules and the Branch Gate.","7. Accept, defer to backlog, or reject \u2014 and record which, with the reason."],"gate":["The request is recorded with its original wording.","Classification is complete: type, level, security level, data class.","Unknowns are listed explicitly rather than resolved by assumption.","A disposition is recorded: accepted, deferred, or rejected, with reasoning.","If accepted, the request answers at least one Branch Gate question in `ROADMAP.md`."],"memory":[{"date":"2026-08-26","title":"Ambiguity resolved silently is ambiguity twice","body":"A repository identity conflict (`baa-211/Aeos-` versus module `github.com/baa-211/aeos-cli`) went unresolved across several sessions because each session treated it as a detail rather than an Intake decision. It was finally settled by explicit choice: keep the repository, migrate the module. The cost of deciding late was a codebase-wide edit across seventeen files. Deciding at Intake would have cost one settings change."},{"date":"2026-08-26","title":"A request for a feature is not a request for its architecture","body":"An account system was requested as \"a login screen with email and password.\" Taken literally that implies hosted accounts, a database and a credential store \u2014 all forbidden by `PROJECT.md` non-goals. The underlying need was persistence, not authentication. Intake's job is to surface that gap before Design commits to the literal reading."}]},"STAGE-02-DESIGN":{"purpose":"Decide how the accepted request will be met, and record the reasoning so the decision survives the person who made it. Design absorbs what earlier vocabularies called Understand, Classify, Plan and Structure.","principles":["1. Prefer the minimum trustworthy complexity the problem actually requires.","2. Record rejected alternatives. A decision without its discarded options cannot be re-evaluated later.","3. Do not create a parallel source of truth. Every consumer reads the same records.","4. Dependencies are decisions. Adding one is never incidental.","5. Reversibility is a design property. State what it would cost to undo this."],"protocol":["1. Read the existing implementation before proposing changes to it.","2. State the problem in terms of observable behavior, not desired code.","3. Enumerate at least two viable approaches.","4. Choose one and write down why the others were rejected.","5. Identify the security and data implications before implementation, not after.","6. Record the decision as an ADR when it constrains future work.","7. Define what evidence will prove the design correct."],"gate":["The chosen approach is recorded, with rejected alternatives and reasons.","Security and data implications are stated.","Reversal cost is stated.","New dependencies are named and justified, or confirmed as none.","The evidence that would prove the design correct is defined in advance."],"memory":[{"date":"2026-08-26","title":"Design the escape hatch before it is needed","body":"Module path migration was chosen over repository rename. The accepted consequence \u2014 Go case-encoding the path as `github.com/baa-211/!aeos-` \u2014 was recorded at decision time rather than discovered later. Reversal cost was also recorded: cheap before first publish, expensive after any consumer runs `go get`. That framing made the decision straightforward."},{"date":"2026-08-26","title":"Sequencing is a design decision","body":"Building authentication before a product surface existed would have committed the project permanently to password reset, recovery and migration obligations for state that did not yet exist. The design held was a local vault sealed with XChaCha20-Poly1305, whose sealing material is derived from the passphrase using Argon2id, with email as a label rather than a credential and no server. Deferring it was the design, not an absence of one."}]},"STAGE-03-BUILD":{"purpose":"Implement the accepted design in the smallest reviewable increments that keep the system working.","principles":["1. Small reviewable changes over large correct ones. A change nobody can review is not trustworthy regardless of its quality.","2. Do not silently add dependencies.","3. Configuration is data, never executable code.","4. AI-generated code is not trusted until reviewed and tested.","5. Leave the build green. A broken main branch blocks everyone."],"protocol":["1. Inspect the code being changed before editing it.","2. Implement the smallest increment that is independently verifiable.","3. Keep formatting mechanical: `gofmt` decides, not preference.","4. Run build and vet continuously, not once at the end.","5. Write the comment that explains why, where the reason is not evident from the code.","6. Update affected records in the same change, not a follow-up."],"gate":["`gofmt` reports no files needing formatting.","`go build ./...` succeeds.","`go vet ./...` is clean.","No new dependency was added without a recorded decision.","Affected AEOS records were updated in the same change."],"memory":[{"date":"2026-08-26","title":"Normalize at the adapter boundary, not at the point of use","body":"Two scan modes reported paths in incompatible forms. The fix belonged in the secrets adapter, where external output first enters the system, rather than in the reporting layer where the symptom appeared. Normalizing at the boundary meant one change fixed both the duplicate-findings defect and the report determinism defect. Correcting at the symptom would have fixed one and hidden the other."}]},"STAGE-04-QA":{"purpose":"Prove the change behaves as designed, and prove the system still behaves as it did. QA absorbs what earlier vocabularies called Verify and Review.","principles":["1. Every validator defect adds a regression test. A fix without one is a fix that will be undone.","2. A test that cannot fail proves nothing. Verify the negative case.","3. Determinism is testable. Assert it rather than assuming it.","4. Coverage is a signal, not a goal. High coverage of trivial paths is not assurance.","5. Reproduce before fixing. A defect you cannot demonstrate is a defect you cannot confirm you fixed."],"protocol":["1. Reproduce the defect or demonstrate the new behavior before changing code.","2. Write the failing test first where practical.","3. Verify the test fails without the fix and passes with it.","4. Run the full suite uncached, not only the affected package.","5. Test the boundary cases: empty, absent, malformed, outside expected range.","6. Confirm the negative control \u2014 that a clean input still passes."],"gate":["`go test ./...` passes uncached across all packages.","Each defect fixed in this change has a regression test that fails without the fix.","Boundary and negative cases are covered.","A clean control case still passes, confirming the test can distinguish states."],"memory":[{"date":"2026-08-26","title":"Verify the fixture before trusting the result","body":"A planted-secret test initially reported no findings, which looked like a scanner failure. The planted values were the AWS documentation example keys, which Gitleaks correctly allowlists. The tool was right and the test was wrong. Re-testing with realistically shaped credentials confirmed detection. A test fixture that is itself invalid produces a false defect report, which costs as much trust as a false pass."},{"date":"2026-08-26","title":"Assert determinism directly","body":"Report determinism was proven by checking the same project from two different filesystem locations and comparing SHA-256 digests of the output. Byte-identical output is a testable property; \"should be deterministic\" is not."}]},"STAGE-05-SECURITY":{"purpose":"Establish that the change does not create, hide, or weaken a security property. Security is a gate a change must pass, not a quality it is assumed to have.","principles":["1. **No false green.** Reporting PASS when the system does not know is the worst possible failure. Unknown is reported as unknown.","2. Repository content is untrusted data. Repository-controlled commands are never automatically executed.","3. Silence is not safety. A silently ignored setting is a hazard, not a convenience.","4. Prove blocking, not merely detection. A scanner that fires while the tool ignores it is indistinguishable from a clean run.","5. Secrets are never printed, logged, or written to a report, including while reporting them.","6. Pin external security tooling to an exact version and verify its checksum before trusting it."],"protocol":["1. Identify what the change could cause the system to stop noticing.","2. Scan for secrets in both working content and version history before publishing anything.","3. Confirm findings are redacted by searching output for the raw values.","4. Confirm the tool blocks: assert the failing exit code, not just the presence of a finding.","5. Confirm the absent-tool path fails closed rather than passing.","6. Verify external tool version and checksum against the pin."],"gate":["Secret scan is clean across working tree and history, or every finding is triaged and recorded.","No raw secret appears in console output, JSON report, or logs.","The blocking path is proven by exit code, not inferred from a finding count.","Missing or unverifiable security tooling produces a blocking error, never a pass.","External security tooling matches its exact pin by checksum."],"memory":[{"date":"2026-08-26","title":"A typo silently disabled the security gate","body":"Misspelling the manifest key `security` as `securty` caused the section to be silently ignored. Secret scanning was disabled and AEOS reported PASS with exit code 0 while a live private key sat in the directory. This was a false green inside the tool built to prevent false greens, and it failed open: the path defect found the same day over-counted findings, which errs safe, while this one under-reported to zero. Fixed by rejecting unknown top-level manifest sections outright, with a suggestion for near-misses. The general lesson: for a security tool, permissive parsing of its own configuration is a vulnerability."},{"date":"2026-08-26","title":"Prove blocking, not detection","body":"The original CI step proved Gitleaks detects a secret. It never proved AEOS acts on one. A regression where the scanner worked but AEOS dropped the finding would have produced a green build. The workflow now asserts exit code 3 and the presence of `AEOS-SEC-001` against a key generated at runtime."},{"date":"2026-08-26","title":"A credential shared is a credential burned","body":"A GitHub token was transmitted in plaintext through a chat interface. Regardless of intent, copies then existed in locations neither party controlled. The only effective response to credential exposure is revocation; retrieval is not possible."},{"date":"2026-08-26","title":"AEOS blocked on its own documentation, correctly","body":"The first `aeos check` run after adding the stage records failed with a CRITICAL finding: Gitleaks' `generic-api-key` rule matched a design memory entry where a cipher name appeared directly after the word `key`, reading the algorithm identifier as a high-entropy secret. The offending phrase is deliberately not reproduced here, because quoting it reproduces the finding. A genuine false positive, and the tool behaved correctly by refusing to pass. Resolved by rewording the prose rather than adding a scanner allowlist. An allowlist would have silenced this finding and every future one matching the same rule, which is the mechanism by which real secrets eventually go unreported. Prose is cheap to change; a weakened detection rule is permanent and invisible. Discovered during M6 dogfooding. Writing about cryptography in project documentation reliably trips secret scanners, and that friction is worth absorbing rather than configuring away."}]},"STAGE-06-COMPLIANCE":{"purpose":"Establish that the change is lawful to distribute and usable by people who do not interact the way its authors do. This stage absorbs what an earlier vocabulary called Approve.","principles":["1. Unlicensed is not permissive. Code published without a license grants nobody any rights.","2. Accessibility is a correctness property, not a polish task. An interface unusable by keyboard is broken, not unrefined.","3. Colour never carries meaning alone.","4. State must be honest in every mode. A status that reads OPTIMAL when the truth is UNKNOWN fails here as surely as in Security.","5. Attribution obligations of dependencies are inherited, not optional."],"protocol":["1. Confirm a license file exists and matches the intended terms.","2. Review dependency licenses for compatibility and attribution obligations.","3. For any interface: verify full keyboard operability and visible focus.","4. Verify contrast meets WCAG 2.2 AA and that no state is signalled by colour alone.","5. Verify semantic structure: labels bound to controls, live regions for dynamic messages, correct heading order.","6. Verify reduced-motion preferences are respected.","7. Confirm no personal data is collected or transmitted without an explicit recorded decision."],"gate":["A license file is present and correct; dependency licenses are compatible.","Every interactive element is reachable and operable by keyboard with visible focus.","Contrast meets WCAG 2.2 AA; no meaning depends on colour alone.","Dynamic status changes are announced to assistive technology.","Reduced-motion preferences are honoured.","Data handling matches the declared classification."],"memory":[{"date":"2026-08-26","title":"Published without a license for one commit","body":"The repository was made public before a license file existed, which meant that for a short window nobody could legally use, fork or contribute to it. Caught during pre-publish review and corrected with MIT before the first push. License presence belongs on the publish checklist, not in a follow-up commit."},{"date":"2026-08-26","title":"A green status badge is an accessibility and honesty failure at once","body":"The visual direction placed a single `OPTIMAL` indicator in the interface. It communicates state by colour alone, and it collapses unknown and healthy into the same signal. The prototype replaced it with explicit textual states: `VAULT LOCKED`, `SESSION NONE`, `LAST CHECK UNKNOWN`."}]},"STAGE-07-RELEASE":{"purpose":"Make the change available, only when evidence justifies it.","principles":["1. Evidence precedes release. A milestone closes on a reproducible result, not on a local one.","2. A milestone is not complete because it is implemented.","3. Publication is one-way. Anything public should be assumed permanent.","4. Version numbers are claims. They should be defensible.","5. Prefer a release that admits what is missing over one that implies completeness.","6. One version, one source. `project.version` in the manifest is authoritative; every versioned record must agree, and `AEOS-VER-001` enforces it.","7. `main` is always the latest verified state. Tags are applied to commits that already passed CI, never in anticipation.","8. A diverged branch is ambiguity about which version is current. Merge it or delete it; never leave it."],"protocol":["1. Confirm all prior stage gates passed.","2. Run the full verification suite in a clean environment, not only locally.","3. Scan for secrets one final time against the exact tree being published.","4. Confirm continuous integration passes on the published artifact, not a local copy.","5. Record what is deliberately absent from this release.","6. Update version and status records to reflect the evidence, not the intent."],"gate":["Every prior stage gate is passed and recorded.","CI passes on the published repository.","Final secret scan of the published tree is clean.","Known gaps and deliberate omissions are recorded in the release notes.","Version and status records match the evidence rather than the plan.","`AEOS-VER-001` is clean: no record disagrees with the manifest version.","A `CHANGELOG.md` entry exists for the version.","The commit is tagged, and the tag, `main`, and `aeos.yaml` all agree.","No branch remains diverged from `main` without a recorded reason."],"memory":[{"date":"2026-08-26","title":"Publish what you have, state what you do not","body":"The publishing token lacked `workflow` scope, so `.github/workflows/ci.yml` could not be pushed with the initial commit. Rather than presenting the repository as complete, the omission was written into the commit message and M5 was held open until the workflow was added separately and passed. A release that admits a gap is more trustworthy than one that hides it."},{"date":"2026-08-26","title":"Local evidence is not CI evidence","body":"End-to-end verification against real Gitleaks 8.30.0 passed locally well before M5 closed. That result rested on one machine and one operator's honesty, and nobody could reproduce it. M5 closed only when GitHub Actions run #4 passed all fourteen steps independently."},{"date":"2026-08-31","title":"Three versions, no tags, nothing watching","body":"`aeos.yaml`, `PROJECT.md` and `STATUS.md` simultaneously declared 0.0.1, 0.0.7 and 0.1.1-rc. There were no Git tags and no changelog, so \"the latest version\" had no answer. Each file had been edited by a different session with a different idea of what the project had reached. Resolved by making the manifest authoritative and adding `AEOS-VER-001`, which blocks when any record disagrees with it. Version drift can no longer reach `main`. The general lesson: duplicated state without a mechanism keeping it aligned will diverge, and the mechanism has to be automatic \u2014 noticing by eye is what failed here for eleven days."}]},"STAGE-08-REPORT":{"purpose":"Record what actually happened and why, so the reasoning outlives the session that produced it. This stage absorbs what earlier vocabularies called Observe, Learn, Record and Guide.","principles":["1. Preserve reasoning, not only outcomes. A decision without its rationale becomes folklore.","2. Records must age honestly. A document claiming a superseded state is worse than no document.","3. Report unknowns as unknowns. Never hide UNKNOWN, STALE or BLOCKED behind a score.","4. Documentation drift is a defect with a severity, not untidiness.","5. Write the negative result. Approaches that failed are as instructive as ones that worked."],"protocol":["1. Record what changed, why, and what evidence supports it.","2. Note which founding principle, if any, was strained.","3. Update every record the change invalidated \u2014 in the same change.","4. Append dated memory entries to the stages this work passed through.","5. State the known unknowns explicitly.","6. Name the next smallest high-value step."],"gate":["Change is recorded with reasoning and supporting evidence.","Every record invalidated by the change has been updated.","Strained principles are named.","Known unknowns are stated rather than omitted.","The next step is recorded."],"memory":[{"date":"2026-08-26","title":"Eleven days of undetected drift, found by accident","body":"`README.md` and `PROJECT.md` both claimed milestone M1 while the project had reached M5. Four completed milestones went unreflected. AEOS validated its own integrity throughout and did not notice, because `REQ-CLI-006` staleness detection is accepted but unimplemented. The tool built to catch documentation drift failed to catch its own \u2014 which is the strongest available argument for building the requirement, and the reason it leads M6."},{"date":"2026-08-26","title":"Four vocabularies for one pipeline","body":"Seven conceptual phases, eleven professional stages, eight rendered globes and eight delivery stages all described the same process differently. Each was created in a separate session and none referenced the others. Reconciled in `ADR-004`. The general lesson: a naming decision made without reading the previous naming decision produces a fourth truth rather than a corrected one."}]}};
+
+const NAMES = {
+ "STAGE-01-INTAKE":"Intake","STAGE-02-DESIGN":"Design","STAGE-03-BUILD":"Build",
+ "STAGE-04-QA":"QA","STAGE-05-SECURITY":"Security","STAGE-06-COMPLIANCE":"Compliance",
+ "STAGE-07-RELEASE":"Release","STAGE-08-REPORT":"Report"};
+const TYPE_COLOR = {REQ:[201,162,39],ADR:[126,144,104],STAGE:[232,203,114],
+  AUDIT:[180,87,58],PROJECT:[232,224,210],STATUS:[189,178,160]};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ─────────── data ─────────── */
+let report = REPORT, stageIds = [], activeStage = null, openStage = null;
+
+function ingest(r){
+  report = r;
+  stageIds = (r.records||[]).filter(x=>x.type==="STAGE").map(x=>x.id).sort();
+  activeStage = (r.pipeline && r.pipeline.current_stage) || null;
+  paintHud();
+  buildOrbs();
+}
+
+function paintHud(){
+  const s = report.summary||{}, res = report.result||"UNKNOWN";
+  $("vResult").textContent = res.toLowerCase().replace(/_/g," ");
+  $("pipResult").className = "pip " + (res==="PASS"?"ok":res==="PASS_WITH_WARNINGS"?"warn":res==="FAIL"?"bad":"unk");
+  $("vStage").textContent = activeStage ? NAMES[activeStage]||activeStage : "undeclared";
+  $("pipStage").className = "pip " + (activeStage?"ok":"unk");
+  $("vVersion").textContent = (report.project&&report.project.version) || "see manifest";
+  $("vRecords").textContent = s.records_discovered ?? "—";
+  $("vCrit").textContent = s.critical ?? "—";
+  $("pipCrit").className = "pip " + (s.critical>0?"bad":s.critical===0?"ok":"unk");
+  $("vSchema").textContent = report.schema_version || "—";
+}
+
+/* ─────────── globe ─────────── */
+const cv = $("scene"), ctx = cv.getContext("2d", {alpha:true});
+let W=0,H=0,DPR=1, cx=0, cy=0, R=0;
+let yaw=0, pitch=-.16, tYaw=0, tPitch=-.16;
+let mx=-9e9, my=-9e9, hoverOrb=-1, breathing=0, dropping=false;
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function resize(){
+  DPR = Math.min(devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cv.style.width = W+"px"; cv.style.height = H+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  cx = W/2; cy = H*0.435;
+  R = Math.min(W*0.19, H*0.29, 250);
+}
+addEventListener("resize", resize);
+
+/* voxels: a fibonacci sphere, tinted by the records the engine actually holds */
+const VOX = [];
+function buildVoxels(){
+  VOX.length = 0;
+  const recs = report.records || [];
+  const N = 1150;
+  const phi = Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<N;i++){
+    const y = 1 - (i/(N-1))*2;
+    const r = Math.sqrt(Math.max(0,1-y*y));
+    const th = phi*i;
+    // continents: coherent blobs so the sphere reads as a world, not noise
+    const n = Math.sin(th*2.1)*Math.cos(y*3.4) + Math.sin(y*5.7+th*.8)*.55;
+    const land = n > .18;
+    let col;
+    if (i < recs.length){                       // real records occupy real voxels
+      col = TYPE_COLOR[recs[i].type] || [189,178,160];
+    } else col = land ? [124,138,96] : [92,96,104];
+    VOX.push({x:Math.cos(th)*r, y, z:Math.sin(th)*r,
+              c:col, land, rec: i<recs.length ? recs[i] : null,
+              s: i<recs.length ? 1.32 : (land?1:.82), lift:0});
+  }
+}
+
+const ORBS = [];
+function buildOrbs(){
+  ORBS.length = 0;
+  const ids = stageIds.length ? stageIds : Object.keys(NAMES);
+  ids.forEach((id,i)=>ORBS.push({id, name:NAMES[id]||id, i, a:0, x:0, y:0, r:0, glow:0}));
+}
+
+function project(p, sy, cyaw, sp, cp){
+  let x = p.x*cyaw - p.z*sy;
+  let z = p.x*sy   + p.z*cyaw;
+  let y = p.y*cp   - z*sp;
+  z     = p.y*sp   + z*cp;
+  return {x,y,z};
+}
+
+function frame(t){
+  ctx.clearRect(0,0,W,H);
+  if(!calm){ tYaw += .0016; breathing = Math.sin(t/1750)*.5+.5; }
+
+  yaw   += (tYaw   - yaw)   * .05;
+  pitch += (tPitch - pitch) * .06;
+
+  const sy=Math.sin(yaw), cyaw=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
+  const rad = R * (1 + breathing*.012 + (dropping?.075:0));
+
+  drawPlatform(rad);
+
+  /* halo */
+  const halo = ctx.createRadialGradient(cx,cy,rad*.55,cx,cy,rad*2.15);
+  halo.addColorStop(0,`rgba(232,203,114,${.15+breathing*.05+(dropping?.14:0)})`);
+  halo.addColorStop(1,"rgba(232,203,114,0)");
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(cx,cy,rad*2.15,0,7); ctx.fill();
+
+  /* voxels */
+  const pts = [];
+  for(const v of VOX){
+    const p = project(v, sy, cyaw, sp, cp);
+    const persp = 1/(1 + p.z*.34);
+    const sx = cx + p.x*rad*persp, syy = cy + p.y*rad*persp;
+    // cursor repulsion: the surface answers the pointer
+    const dx = sx-mx, dy = syy-my, d2 = dx*dx+dy*dy;
+    const near = d2 < 12000 && p.z > -.35;
+    v.lift += ((near ? (1 - Math.sqrt(d2)/110) : 0) - v.lift) * .16;
+    pts.push({sx,syy,z:p.z,v,persp,lift:v.lift});
+  }
+  pts.sort((a,b)=>b.z-a.z);
+
+  for(const p of pts){
+    if(p.z > 1.02) continue;
+    const shade = Math.max(.14, (1 - p.z)*.55);
+    const [r,g,b] = p.v.c;
+    const boost = p.lift*.9 + (dropping?.3:0);
+    const sz = Math.max(.9, 3.5*p.v.s*p.persp*(1+p.lift*.6));
+    const off = p.lift*13;
+    const nx = p.sx + (p.sx-cx)*off/rad, ny = p.syy + (p.syy-cy)*off/rad;
+    ctx.fillStyle = `rgba(${Math.min(255,r+boost*150)|0},${Math.min(255,g+boost*130)|0},${Math.min(255,b+boost*80)|0},${Math.min(1,shade+boost*.55)})`;
+    ctx.fillRect(nx-sz/2, ny-sz/2, sz, sz);
+  }
+
+  /* light shaft to the floor */
+  const shaft = ctx.createLinearGradient(cx,cy+rad*.55,cx,cy+rad*1.9);
+  shaft.addColorStop(0,`rgba(232,203,114,${.3+breathing*.09})`);
+  shaft.addColorStop(1,"rgba(232,203,114,0)");
+  ctx.fillStyle=shaft;
+  ctx.beginPath(); ctx.moveTo(cx-rad*.10,cy+rad*.5);
+  ctx.lineTo(cx+rad*.10,cy+rad*.5); ctx.lineTo(cx+rad*.62,cy+rad*1.9);
+  ctx.lineTo(cx-rad*.62,cy+rad*1.9); ctx.closePath(); ctx.fill();
+
+  drawOrbs(rad, t);
+  requestAnimationFrame(frame);
+}
+
+function drawPlatform(rad){
+  const py = cy + rad*1.34, rx = rad*2.55, ry = rad*.55;
+  ctx.save();
+  ctx.strokeStyle="rgba(201,162,39,.2)"; ctx.lineWidth=1;
+  for(let k=1;k<=3;k++){
+    ctx.beginPath(); ctx.ellipse(cx,py,rx*(.52+k*.17),ry*(.52+k*.17),0,0,7); ctx.stroke();
+  }
+  const fl = ctx.createRadialGradient(cx,py,0,cx,py,rx);
+  fl.addColorStop(0,"rgba(232,224,210,.075)"); fl.addColorStop(1,"rgba(232,224,210,0)");
+  ctx.fillStyle=fl; ctx.beginPath(); ctx.ellipse(cx,py,rx,ry,0,0,7); ctx.fill();
+  ctx.restore();
+}
+
+function drawOrbs(rad, t){
+  const py = cy + rad*1.34, rx = rad*2.02, ry = rad*.46;
+  const n = ORBS.length || 8;
+  ORBS.forEach((o,i)=>{
+    const a = Math.PI + (i+.5)*(Math.PI/n);      // front arc, left to right
+    o.x = cx + Math.cos(a)*rx;
+    o.y = py + Math.sin(a)*ry;
+    const isActive = o.id === activeStage, isOpen = o.id === openStage;
+    const target = (isActive?1:0) + (i===hoverOrb?.55:0) + (isOpen?.5:0);
+    o.glow += (Math.min(1.6,target) - o.glow)*.12;
+    o.r = rad*.108 * (1 + o.glow*.2);
+
+    // aura
+    if(o.glow>.02){
+      const g = ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r*3.6);
+      g.addColorStop(0,`rgba(232,203,114,${.34*o.glow})`);
+      g.addColorStop(1,"rgba(232,203,114,0)");
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*3.6,0,7); ctx.fill();
+    }
+    // voxel shell
+    const seed = i*17.3, pulse = isActive && !calm ? Math.sin(t/520+i)*.14+.86 : 1;
+    for(let k=0;k<46;k++){
+      const yy = 1-(k/45)*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = 2.399*k + seed + (calm?0:t/2600);
+      const px = Math.cos(th)*rr, pz = Math.sin(th)*rr;
+      if(pz < -.15) continue;
+      const s = Math.max(1.1, o.r*.3*(1+pz*.3));
+      const lum = (.3 + o.glow*.62) * (.55+pz*.45) * pulse;
+      ctx.fillStyle = `rgba(232,203,114,${Math.min(.95,lum)})`;
+      ctx.fillRect(o.x+px*o.r-s/2, o.y+yy*o.r-s/2, s, s);
+    }
+    // ring for the declared stage
+    if(isActive){
+      ctx.strokeStyle=`rgba(232,203,114,${.34+ (calm?0:Math.sin(t/620)*.16)})`;
+      ctx.lineWidth=1; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*1.85,0,7); ctx.stroke();
+    }
+    // label
+    ctx.font = `${i===hoverOrb||isActive?"500":"400"} 9px "IBM Plex Mono",monospace`;
+    ctx.textAlign="center";
+    ctx.fillStyle = isActive ? "rgba(232,203,114,.95)"
+                  : i===hoverOrb ? "rgba(232,224,210,.9)" : "rgba(138,128,115,.72)";
+    ctx.fillText(String(i+1).padStart(2,"0")+"  "+o.name.toUpperCase(), o.x, o.y+o.r*2.5+11);
+  });
+}
+
+/* ─────────── interaction ─────────── */
+addEventListener("pointermove", e => {
+  mx = e.clientX; my = e.clientY;
+  tYaw   += ((e.clientX/W - .5) * .0009);
+  tPitch = -.16 + (e.clientY/H - .5) * .30;
+  let h = -1;
+  ORBS.forEach((o,i)=>{ if(Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*2.1) h=i; });
+  if(h!==hoverOrb){ hoverOrb=h; cv.style.cursor = h>=0 ? "pointer" : "default"; }
+});
+addEventListener("pointerleave", ()=>{ mx=my=-9e9; });
+cv.addEventListener("click", e => {
+  const hit = ORBS.find(o => Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*2.1);
+  if(hit) showStage(hit.id);
+});
+addEventListener("keydown", e => {
+  if(e.key === "Escape"){ closePanels(); return; }
+  const n = parseInt(e.key,10);
+  if(n>=1 && n<=8 && ORBS[n-1]) showStage(ORBS[n-1].id);
+});
+
+function closePanels(){
+  $("stagePanel").classList.remove("open");
+  $("dropPanel").classList.remove("open");
+  openStage = null;
+}
+$("spClose").onclick = closePanels;
+$("dpClose").onclick = closePanels;
+
+function showStage(id){
+  const s = STAGES[id];
+  const rec = (report.records||[]).find(r=>r.id===id);
+  openStage = id;
+  $("spId").textContent = id + (rec?.status ? " · " + rec.status : "");
+  $("spTitle").textContent = NAMES[id] || id;
+
+  const isActive = id === activeStage;
+  let html = "";
+
+  html += `<div class="blk"><span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span></div>`;
+
+  if(!s){
+    html += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
+  } else {
+    html += `<div class="blk"><h3>Purpose</h3><p>${esc(s.purpose)}</p></div>`;
+    if(s.principles?.length)
+      html += `<div class="blk"><h3>Principles</h3><ul>${s.principles.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ul></div>`;
+    if(s.protocol?.length)
+      html += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
+    if(s.gate?.length)
+      html += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+    if(s.memory?.length)
+      html += `<div class="blk"><h3>Memory · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
+        s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)}</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>`;
+  }
+
+  // stage-relevant findings, straight from the report
+  const rel = (report.findings||[]).filter(f =>
+    id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
+  html += `<div class="blk"><h3>Findings at this gate</h3>` +
+    (rel.length ? `<table>${rel.map(f=>`<tr><td class="k">${esc(f.severity)}</td><td>${esc(f.message)}</td></tr>`).join("")}</table>`
+                : `<p>None reported. AEOS surfaces findings for the Security and Report gates; the other six have no automated check yet, so their state is unknown rather than passing.</p>`) + `</div>`;
+
+  if(rec) html += `<div class="blk"><h3>Record</h3><p><code>${esc(rec.path)}</code></p></div>`;
+
+  $("spBody").innerHTML = html;
+  $("dropPanel").classList.remove("open");
+  $("stagePanel").classList.add("open");
+  $("spClose").focus();
+}
+
+/* ─────────── drop intake ─────────── */
+let dragDepth = 0;
+addEventListener("dragenter", e => { e.preventDefault(); if(++dragDepth===1){ $("dropZone").classList.add("on"); dropping=true; } });
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("dragleave", e => { e.preventDefault(); if(--dragDepth<=0){ dragDepth=0; $("dropZone").classList.remove("on"); dropping=false; } });
+addEventListener("drop", e => {
+  e.preventDefault(); dragDepth=0;
+  $("dropZone").classList.remove("on"); dropping=false;
+  const files = [...(e.dataTransfer?.files||[])];
+  if(files.length) proposeIntake(files);
+});
+
+const CLASSIFY = [
+  [/^aeos\.ya?ml$/i,          "AEOS manifest",        "Authoritative. Project version, level and security policy."],
+  [/^(PROJECT|STATUS)\.md$/i, "AEOS record",          "Versioned record. Must agree with the manifest or AEOS-VER-001 blocks."],
+  [/^(REQ|ADR|CHG|AUDIT|STAGE)[-_]/i, "AEOS record",  "Frontmatter record. Enters the index and reference graph."],
+  [/\.go$/i,                  "Source",               "Build and QA gates apply. Must pass gofmt and vet."],
+  [/\.(ya?ml|toml|json|ini|cfg|conf)$/i, "Configuration", "Configuration is data, never executable."],
+  [/\.(pem|key|p12|pfx|jks|crt)$/i, "Credential material", "Security gate blocks. This should not enter a repository."],
+  [/^\.env/i,                 "Environment file",     "Security gate blocks unless it is an example with no real values."],
+  [/\.(png|jpe?g|svg|webp|gif)$/i, "Asset",           "Compliance gate applies: alt text and contrast."],
+  [/\.(md|txt|rst)$/i,        "Document",             "Report & Documentation gate. Freshness will apply once REQ-CLI-006 lands."],
+];
+
+function classify(name){
+  for(const [re, kind, note] of CLASSIFY) if(re.test(name)) return {kind, note};
+  return {kind:"Unclassified", note:"Intake records unknowns as unknown rather than guessing a type."};
+}
+
+function proposeIntake(files){
+  const rows = files.slice(0,40).map(f=>{
+    const c = classify(f.name);
+    const risky = /Credential|Environment/.test(c.kind);
+    return `<tr><td class="k">${esc(f.name)}</td><td>${risky?"<b>":""}${esc(c.kind)}${risky?"</b>":""} · ${(f.size/1024).toFixed(1)} KB<br><span style="color:var(--marble-3);font-size:11.5px">${esc(c.note)}</span></td></tr>`;
+  }).join("");
+  const risky = files.filter(f=>/Credential|Environment/.test(classify(f.name).kind));
+
+  $("dpTitle").textContent = `${files.length} file${files.length===1?"":"s"} received`;
+  $("dpBody").innerHTML = `
+    <div class="blk"><h3>Stage 01 · Intake — classification</h3>
+      <p>Intake records what arrived and how it classifies. It does not accept, move, or modify anything.</p></div>
+    <div class="blk"><table>${rows}</table>
+      ${files.length>40?`<p style="margin-top:10px">…and ${files.length-40} more.</p>`:""}</div>
+    ${risky.length ? `<div class="note"><b>${risky.length} file${risky.length===1?"":"s"} would block at the Security gate.</b>
+      Credential material and environment files fail before Build. If any value here is real, treat it as exposed and rotate it.</div>` : ""}
+    <div class="note"><b>Nothing was read, uploaded, or written.</b>
+      Only file names and sizes were inspected, in your browser. The pipeline does not advance from this window — a person decides.
+      Run <code>aeos check</code> to produce a real report.</div>`;
+  $("stagePanel").classList.remove("open");
+  $("dropPanel").classList.add("open");
+  $("dpClose").focus();
+}
+
+/* ─────────── boot ─────────── */
+resize();
+ingest(REPORT);
+buildVoxels();
+requestAnimationFrame(frame);
+
+// prefer a live report when served over http
+fetch("report.json",{cache:"no-store"})
+  .then(r=>r.ok?r.json():Promise.reject())
+  .then(r=>{ ingest(r); buildVoxels(); })
+  .catch(()=>{});
+</script>
+</body>
+</html>

@@ -79,7 +79,7 @@ func check(root string) (reporting.Report, int) {
 			f.RecommendedAction = "inspect filesystem access and rerun the validator"
 			exit = exitInternal
 		}
-		return reporting.New(reporting.Project{}, config.ManifestName, nil, []findings.Finding{f}), exit
+		return reporting.New(reporting.Project{}, reporting.Pipeline{}, config.ManifestName, nil, []findings.Finding{f}), exit
 	}
 
 	project := reporting.Project{ID: manifest.Project.ID, Name: manifest.Project.Name, Level: manifest.Project.Level, SecurityLevel: manifest.Project.SecurityLevel}
@@ -97,7 +97,7 @@ func check(root string) (reporting.Report, int) {
 			f.RecommendedAction = "inspect repository filesystem access and rerun the validator"
 			exit = exitInternal
 		}
-		return reporting.New(project, config.ManifestName, nil, []findings.Finding{f}), exit
+		return reporting.New(project, reporting.Pipeline{}, config.ManifestName, nil, []findings.Finding{f}), exit
 	}
 
 	fs := validation.Validate(root, manifest, discovered)
@@ -125,7 +125,7 @@ func check(root string) (reporting.Report, int) {
 			fs = append(fs, secretFindings...)
 		}
 	}
-	report := reporting.New(project, config.ManifestName, reportRecords(root, discovered), fs)
+	report := reporting.New(project, reporting.Pipeline{CurrentStage: manifest.Pipeline.CurrentStage}, config.ManifestName, reportRecords(root, discovered), fs)
 	if report.Summary.Critical > 0 {
 		return report, exitCritical
 	}

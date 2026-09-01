@@ -34,6 +34,13 @@ type Manifest struct {
 	Security struct {
 		SecretScanRequired bool
 	}
+	Pipeline struct {
+		// CurrentStage is the stage record id the project declares itself to
+		// be in. It is declarative: AEOS reports what the project claims, it
+		// does not infer progress. An empty value is reported as unknown
+		// rather than guessed at.
+		CurrentStage string
+	}
 }
 
 // Load parses the deliberately small AEOS v0.1 manifest subset required by M1.
@@ -92,7 +99,7 @@ func Load(root string) (Manifest, string, error) {
 				}
 				return Manifest{}, path, invalid(lineNo, msg)
 			}
-			if section != "aeos" && section != "project" && section != "security" {
+			if section != "aeos" && section != "project" && section != "security" && section != "pipeline" {
 				section = "_ignored"
 			}
 			continue
@@ -140,6 +147,10 @@ func Load(root string) (Manifest, string, error) {
 		}
 
 		switch section {
+		case "pipeline":
+			if key == "current_stage" {
+				manifest.Pipeline.CurrentStage = value
+			}
 		case "aeos":
 			switch key {
 			case "specification":
@@ -236,6 +247,7 @@ var knownSections = map[string]bool{
 	"project":        true,
 	"security":       true,
 	"classification": true,
+	"pipeline":       true,
 }
 
 func knownSectionList() string {

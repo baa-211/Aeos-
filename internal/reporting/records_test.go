@@ -23,7 +23,7 @@ func sampleRecords() []Record {
 // carried no records it would have to parse the repository itself and become a
 // second source of truth.
 func TestReportCarriesRecordIndex(t *testing.T) {
-	r := New(Project{ID: "AEOS-CLI"}, "aeos.yaml", sampleRecords(), nil)
+	r := New(Project{ID: "AEOS-CLI"}, Pipeline{}, "aeos.yaml", sampleRecords(), nil)
 
 	if len(r.Records) != 4 {
 		t.Fatalf("report carries %d records, want 4", len(r.Records))
@@ -49,12 +49,12 @@ func TestReportCarriesRecordIndex(t *testing.T) {
 }
 
 func TestRecordIndexIsDeterministic(t *testing.T) {
-	first := New(Project{}, "aeos.yaml", sampleRecords(), nil)
+	first := New(Project{}, Pipeline{}, "aeos.yaml", sampleRecords(), nil)
 
 	shuffled := sampleRecords()
 	shuffled[0], shuffled[3] = shuffled[3], shuffled[0]
 	shuffled[1], shuffled[2] = shuffled[2], shuffled[1]
-	second := New(Project{}, "aeos.yaml", shuffled, nil)
+	second := New(Project{}, Pipeline{}, "aeos.yaml", shuffled, nil)
 
 	var a, b bytes.Buffer
 	if err := JSON(&a, first); err != nil {
@@ -72,7 +72,7 @@ func TestRecordIndexIsDeterministic(t *testing.T) {
 // alter an already-produced report.
 func TestNewCopiesRecords(t *testing.T) {
 	input := sampleRecords()
-	r := New(Project{}, "aeos.yaml", input, nil)
+	r := New(Project{}, Pipeline{}, "aeos.yaml", input, nil)
 	input[0].ID = "MUTATED"
 
 	for _, rec := range r.Records {
@@ -83,7 +83,7 @@ func TestNewCopiesRecords(t *testing.T) {
 }
 
 func TestRecordPathsAreRelative(t *testing.T) {
-	r := New(Project{}, "aeos.yaml", sampleRecords(), nil)
+	r := New(Project{}, Pipeline{}, "aeos.yaml", sampleRecords(), nil)
 	for _, rec := range r.Records {
 		if filepath.IsAbs(rec.Path) {
 			t.Fatalf("record %s carries an absolute path: %q", rec.ID, rec.Path)
@@ -95,7 +95,7 @@ func TestRecordPathsAreRelative(t *testing.T) {
 }
 
 func TestEmptyRecordIndexSerializesAsArray(t *testing.T) {
-	r := New(Project{}, "aeos.yaml", nil, []findings.Finding{})
+	r := New(Project{}, Pipeline{}, "aeos.yaml", nil, []findings.Finding{})
 	var buf bytes.Buffer
 	if err := JSON(&buf, r); err != nil {
 		t.Fatal(err)

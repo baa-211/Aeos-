@@ -14,7 +14,7 @@ func TestNewAndJSONAreDeterministic(t *testing.T) {
 		{Rule: "AEOS-X-002", Severity: findings.Warning, Confidence: "verified", Message: "warning"},
 		{Rule: "AEOS-X-001", Severity: findings.Error, Confidence: "verified", Message: "error", Blocking: true},
 	}
-	r := New(Project{}, "aeos.yaml", []Record{
+	r := New(Project{}, Pipeline{}, "aeos.yaml", []Record{
 		{Type: "REQ", ID: "REQ-2", Path: "docs/b.md"},
 		{Type: "ADR", ID: "ADR-1", Path: "docs/a.md"},
 		{Type: "REQ", ID: "REQ-1", Path: "docs/c.md"},
@@ -39,7 +39,7 @@ func TestNewAndJSONAreDeterministic(t *testing.T) {
 }
 
 func TestConsoleIncludesAction(t *testing.T) {
-	r := New(Project{}, "", nil, []findings.Finding{{
+	r := New(Project{}, Pipeline{}, "", nil, []findings.Finding{{
 		Rule: "AEOS-T-001", Severity: findings.Error, Confidence: "verified", Message: "bad", RecommendedAction: "fix it", Blocking: true,
 	}})
 	var buf bytes.Buffer

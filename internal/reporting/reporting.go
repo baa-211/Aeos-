@@ -12,7 +12,7 @@ import (
 
 // SchemaVersion is the version of the report contract itself, not of AEOS.
 // Consumers must gate on this rather than on the tool version.
-const SchemaVersion = "0.2"
+const SchemaVersion = "0.3"
 
 type Project struct {
 	ID            string `json:"id,omitempty"`
@@ -41,9 +41,17 @@ type Record struct {
 	References []string `json:"references,omitempty"`
 }
 
+// Pipeline reports what the project declares about its own position in the
+// delivery pipeline. AEOS does not infer progress; an undeclared stage is
+// reported as empty and must be displayed as unknown, never guessed.
+type Pipeline struct {
+	CurrentStage string `json:"current_stage,omitempty"`
+}
+
 type Report struct {
 	SchemaVersion string             `json:"schema_version"`
 	Project       Project            `json:"project"`
+	Pipeline      Pipeline           `json:"pipeline"`
 	ManifestPath  string             `json:"manifest_path,omitempty"`
 	Summary       Summary            `json:"summary"`
 	Records       []Record           `json:"records"`
@@ -66,13 +74,14 @@ func SortRecords(rs []Record) {
 	})
 }
 
-func New(project Project, manifestPath string, recs []Record, fs []findings.Finding) Report {
+func New(project Project, pipeline Pipeline, manifestPath string, recs []Record, fs []findings.Finding) Report {
 	findings.Sort(fs)
 	indexed := append([]Record{}, recs...)
 	SortRecords(indexed)
 	r := Report{
 		SchemaVersion: SchemaVersion,
 		Project:       project,
+		Pipeline:      pipeline,
 		ManifestPath:  manifestPath,
 		Summary:       Summary{RecordsDiscovered: len(indexed)},
 		Records:       indexed,

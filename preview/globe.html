@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AEOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Spectral:wght@200;300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --stone-0:#0E0C0A; --stone-1:#1A1613; --stone-2:#2A241E; --stone-3:#3D352C;
+  --ivory:#EFE7D8; --ivory-dim:#B8AC98; --ivory-faint:#7A7061;
+  --gilt:#C9A227; --gilt-lit:#F0D384; --gilt-deep:#8A6E1B;
+  --sea:#2C5A63; --land:#7E9459; --land-lit:#B9CE7E;
+  --oxide:#C4553A; --amber:#D69B3F; --moss:#88A868;
+  --hair:rgba(201,162,39,.16);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--stone-0);color:var(--ivory);overflow:hidden;
+  font-family:"Spectral",Georgia,serif;font-weight:300;-webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",monospace;letter-spacing:.16em;text-transform:uppercase;font-size:10px}
+
+/* ---------- chamber ---------- */
+#chamber{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(80% 60% at 50% 34%, rgba(240,211,132,.13) 0%, rgba(240,211,132,0) 62%),
+  radial-gradient(50% 42% at 8% 22%, rgba(240,211,132,.10) 0%, rgba(240,211,132,0) 70%),
+  radial-gradient(50% 42% at 92% 22%, rgba(240,211,132,.09) 0%, rgba(240,211,132,0) 70%),
+  linear-gradient(178deg, var(--stone-1) 0%, var(--stone-0) 58%, #080706 100%);}
+#grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.30;mix-blend-mode:overlay}
+#arches{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5}
+
+/* ---------- layout ---------- */
+#stage{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column}
+#glass{position:absolute;inset:0;z-index:3;pointer-events:none}
+#glass > *{pointer-events:auto}
+
+header{padding:22px clamp(16px,3vw,38px) 0;display:flex;justify-content:space-between;
+  align-items:flex-start;gap:20px;flex-wrap:wrap;position:relative;z-index:4}
+.brand{text-align:center;flex:1;min-width:180px;order:2}
+.brand h1{font-family:"Cinzel",serif;font-weight:500;font-size:clamp(22px,3vw,34px);
+  letter-spacing:.44em;text-indent:.44em;margin:0;color:var(--ivory);
+  text-shadow:0 0 26px rgba(240,211,132,.32)}
+.brand p{margin:7px 0 0;color:var(--ivory-faint);font-size:9px;letter-spacing:.3em}
+.corner{display:flex;flex-direction:column;gap:6px;min-width:150px;order:1}
+.corner.right{align-items:flex-end;order:3;text-align:right}
+.st{display:flex;align-items:center;gap:8px;color:var(--ivory-dim);font-size:9.5px;
+  font-family:"IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase}
+.corner.right .st{flex-direction:row-reverse}
+.st b{color:var(--ivory);font-weight:500}
+.pip{width:6px;height:6px;border-radius:50%;flex:none;background:var(--ivory-faint)}
+.pip.pass{background:var(--moss);box-shadow:0 0 8px var(--moss)}
+.pip.warn{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.pip.fail{background:var(--oxide);box-shadow:0 0 8px var(--oxide)}
+.pip.unk{background:transparent;border:1px solid var(--ivory-faint)}
+
+/* ---------- globe ---------- */
+#field{flex:1;position:relative;min-height:0}
+#globe{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#dropHint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;opacity:0;transition:opacity .3s ease;z-index:5}
+#dropHint.on{opacity:1}
+#dropHint .ring{width:230px;height:230px;border:1px dashed var(--gilt);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,rgba(240,211,132,.13),transparent 68%)}
+#dropHint span{font-family:"Cinzel",serif;font-size:12px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--gilt-lit)}
+
+/* ---------- pipeline platform ---------- */
+#platform{position:relative;height:clamp(150px,21vh,210px);flex:none;z-index:4}
+#orbitline{position:absolute;inset:0;pointer-events:none}
+.node{position:absolute;transform:translate(-50%,-50%);background:none;border:0;padding:0;
+  cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;
+  align-items:center;gap:7px;width:96px;text-align:center}
+.node .bulb{width:19px;height:19px;border-radius:50%;position:relative;
+  background:radial-gradient(circle at 34% 30%, var(--stone-3), var(--stone-2) 70%);
+  border:1px solid rgba(201,162,39,.3);transition:all .45s cubic-bezier(.4,0,.2,1)}
+.node .bulb::after{content:"";position:absolute;inset:-8px;border-radius:50%;
+  background:radial-gradient(circle,rgba(240,211,132,.36),transparent 66%);
+  opacity:0;transition:opacity .45s ease}
+.node .lbl{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ivory-faint);line-height:1.45;transition:color .3s ease}
+.node .idx{font-family:"IBM Plex Mono",monospace;font-size:7.5px;color:var(--ivory-faint);opacity:.65}
+.node:hover .bulb,.node:focus-visible .bulb{transform:scale(1.3);border-color:var(--gilt)}
+.node:hover .lbl,.node:focus-visible .lbl{color:var(--ivory)}
+.node:focus-visible{outline:1px solid var(--gilt);outline-offset:8px;border-radius:3px}
+.node.done .bulb{background:radial-gradient(circle at 34% 30%, var(--gilt), var(--gilt-deep));
+  border-color:var(--gilt-lit)}
+.node.done .lbl{color:var(--ivory-dim)}
+.node.live .bulb{background:radial-gradient(circle at 34% 30%, #FFF3D0, var(--gilt-lit));
+  border-color:#FFF3D0;box-shadow:0 0 20px 5px rgba(240,211,132,.6);animation:breathe 2.4s ease-in-out infinite}
+.node.live .bulb::after{opacity:1}
+.node.live .lbl{color:var(--gilt-lit)}
+.node.sel .lbl{color:var(--ivory);text-decoration:underline;text-underline-offset:3px}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+
+/* ---------- panel ---------- */
+#panel{position:fixed;top:0;right:0;height:100%;width:min(430px,92vw);z-index:20;
+  background:linear-gradient(180deg,rgba(26,22,19,.97),rgba(14,12,10,.98));
+  border-left:1px solid var(--hair);backdrop-filter:blur(14px);
+  transform:translateX(100%);transition:transform .42s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden}
+#panel.open{transform:translateX(0)}
+#panel header{padding:22px 24px 16px;border-bottom:1px solid var(--hair);display:block}
+#panel h2{font-family:"Cinzel",serif;font-weight:500;font-size:17px;letter-spacing:.11em;margin:8px 0 0}
+#panel .eyebrow{color:var(--gilt);font-size:9px;letter-spacing:.2em;
+  font-family:"IBM Plex Mono",monospace;text-transform:uppercase;margin:0}
+#close{position:absolute;top:18px;right:18px;background:none;border:1px solid var(--hair);
+  color:var(--ivory-dim);width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1;border-radius:2px}
+#close:hover{color:var(--ivory);border-color:var(--gilt)}
+#close:focus-visible{outline:1px solid var(--gilt);outline-offset:2px}
+#body{padding:20px 24px 30px;overflow-y:auto;flex:1;font-size:13.5px;line-height:1.75;color:var(--ivory-dim)}
+#body h3{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--gilt);margin:22px 0 8px;font-weight:500}
+#body h3:first-child{margin-top:0}
+#body p{margin:0 0 10px}
+#body ul{margin:0 0 10px;padding-left:17px}
+#body li{margin:0 0 5px}
+#body code,#body .path{font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--ivory-faint);word-break:break-all}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.13em;
+  text-transform:uppercase;border:1px solid var(--hair);padding:3px 7px;color:var(--ivory-faint)}
+.tag.live{border-color:var(--gilt);color:var(--gilt-lit)}
+.filelist{list-style:none;padding:0;margin:0 0 14px}
+.filelist li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;
+  border-bottom:1px solid rgba(201,162,39,.09);font-family:"IBM Plex Mono",monospace;font-size:11px}
+.filelist .sz{color:var(--ivory-faint);flex:none}
+.btn{display:inline-block;background:none;border:1px solid var(--gilt);color:var(--ivory);
+  font-family:"Cinzel",serif;font-size:11px;font-weight:500;letter-spacing:.2em;text-indent:.2em;
+  text-transform:uppercase;padding:11px 18px;cursor:pointer;margin:6px 8px 0 0;transition:background .25s}
+.btn:hover{background:rgba(201,162,39,.15)}
+.btn:focus-visible{outline:2px solid var(--gilt);outline-offset:3px}
+.btn.ghost{border-color:var(--hair);color:var(--ivory-dim)}
+.warn{border:1px solid rgba(196,85,58,.4);border-left:3px solid var(--oxide);
+  padding:11px 14px;margin:0 0 14px;font-size:12.5px;color:var(--ivory-dim);line-height:1.65}
+.note{border-left:2px solid var(--hair);padding:2px 0 2px 13px;margin:0 0 12px;
+  font-size:12.5px;color:var(--ivory-faint)}
+
+footer.strip{position:fixed;bottom:0;left:0;right:0;z-index:4;padding:9px clamp(16px,3vw,38px);
+  text-align:center;color:var(--ivory-faint);font-family:"IBM Plex Mono",monospace;
+  font-size:8px;letter-spacing:.19em;text-transform:uppercase;
+  border-top:1px solid rgba(201,162,39,.09);background:linear-gradient(180deg,transparent,rgba(8,7,6,.75))}
+
+@media (max-width:760px){
+  .brand{order:1;flex-basis:100%}
+  .corner,.corner.right{align-items:flex-start;text-align:left;order:2}
+  .corner.right .st{flex-direction:row}
+  .node{width:66px}.node .lbl{font-size:7px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div id="chamber"></div>
+<svg id="grain" aria-hidden="true"><filter id="gr"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .45 0 0 0 0 .38 0 0 0 .5 0"/></filter><rect width="100%" height="100%" filter="url(#gr)"/></svg>
+<svg id="arches" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1400 900">
+  <defs><linearGradient id="col" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#F0D384" stop-opacity=".16"/>
+    <stop offset="1" stop-color="#F0D384" stop-opacity="0"/></linearGradient></defs>
+  <path d="M70 900 L70 300 Q70 175 175 175 Q280 175 280 300 L280 900" fill="none" stroke="url(#col)" stroke-width="1.5"/>
+  <path d="M1120 900 L1120 300 Q1120 175 1225 175 Q1330 175 1330 300 L1330 900" fill="none" stroke="url(#col)" stroke-width="1.5"/>
+  <path d="M330 900 L330 380 Q330 285 405 285 Q480 285 480 380 L480 900" fill="none" stroke="url(#col)" stroke-width="1"/>
+  <path d="M920 900 L920 380 Q920 285 995 285 Q1070 285 1070 380 L1070 900" fill="none" stroke="url(#col)" stroke-width="1"/>
+</svg>
+
+<div id="stage">
+  <header>
+    <div class="corner" id="statesL"></div>
+    <div class="brand">
+      <h1>AEOS</h1>
+      <p class="mono">Personal Engineering Command System</p>
+    </div>
+    <div class="corner right" id="statesR"></div>
+  </header>
+
+  <div id="field">
+    <canvas id="globe"></canvas>
+    <div id="dropHint"><div class="ring"><span>Release to inspect</span></div></div>
+  </div>
+
+  <div id="platform">
+    <canvas id="orbitline"></canvas>
+  </div>
+</div>
+
+<aside id="panel" role="dialog" aria-modal="false" aria-labelledby="ptitle" aria-hidden="true">
+  <header>
+    <button id="close" aria-label="Close panel">&times;</button>
+    <p class="eyebrow" id="peyebrow"></p>
+    <h2 id="ptitle"></h2>
+  </header>
+  <div id="body"></div>
+</aside>
+
+<footer class="strip" id="strip">Read-only preview · renders report.json · computes nothing</footer>
+
+<script>
+/* ============================ world landmask ============================ */
+const WORLD = [
+  "........................................................................",
+  ".........................########.......................................",
+  ".........................########.......................................",
+  ".........................########...............########################",
+  "..###############################.######################################",
+  "..###############################.######################################",
+  "..###############################.######################################",
+  "..#######################.........#########.....#################.......",
+  "..#######################.........#########.....#################.......",
+  "...........############...........#########.............##########......",
+  "...........############...........###############.......##########......",
+  "...........############..........################.......##########......",
+  "...........############..........################.#####.######..........",
+  "..............#####..............################.#####.######..........",
+  "..............#######............#############....############..........",
+  "..............#######............#############....#########.............",
+  ".................#############...#############....#########.............",
+  "....................##########...#############.........##########.......",
+  "....................##########........#######..........##########.......",
+  "....................##########........#######..........##########.......",
+  ".....................#########........#######..........#############....",
+  ".....................#########........#######..............#########....",
+  ".....................#########.........#####...............#########....",
+  ".....................#########.........#####...............#########....",
+  "......................####.............#####...............#########....",
+  "......................####.............#####...............#########.###",
+  ".....................#####.................................#########.###",
+  ".....................###.............................................###",
+  ".....................###................................................",
+  ".....................###................................................",
+  "........................................................................",
+  "########################################################################",
+  "########################################################################",
+  "########################################################################",
+  "########################################################################",
+  "########################################################################"
+];
+
+const STAGES = [
+  ["STAGE-01-INTAKE","Intake"],["STAGE-02-DESIGN","Design"],
+  ["STAGE-03-BUILD","Build"],["STAGE-04-QA","QA"],
+  ["STAGE-05-SECURITY","Security"],["STAGE-06-COMPLIANCE","Compliance"],
+  ["STAGE-07-RELEASE","Release"],["STAGE-08-REPORT","Report"]
+];
+
+const STAGE_BLURB = {
+  "STAGE-01-INTAKE":"Capture what is actually being asked, before anything is designed. Ambiguity is recorded as a finding, not resolved by assumption.",
+  "STAGE-02-DESIGN":"Decide how the request will be met, and record why — including the alternatives that were rejected.",
+  "STAGE-03-BUILD":"Implement in the smallest reviewable increments that keep the system working.",
+  "STAGE-04-QA":"Prove the change behaves as designed and the system still behaves as it did. Every defect adds a regression test.",
+  "STAGE-05-SECURITY":"Establish that nothing was created, hidden or weakened. Prove blocking, not merely detection.",
+  "STAGE-06-COMPLIANCE":"Establish that the result is lawful to distribute and usable by people who do not interact the way its authors do.",
+  "STAGE-07-RELEASE":"Make it available, only when evidence justifies it. Local evidence is not CI evidence.",
+  "STAGE-08-REPORT":"Record what happened and why, so the reasoning outlives the session that produced it."
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ============================== globe ================================== */
+const cv = $("globe"), cx = cv.getContext("2d");
+let W=0,H=0,DPR=1,R=0,CXp=0,CYp=0;
+let yaw=0, pitch=-.22, tYaw=0, tPitch=-.22;
+let mx=-9e9, my=-9e9, pulse=0, spin=0.0016;
+const PTS=[];
+
+(function buildPoints(){
+  const N = 2600, rows = WORLD.length, cols = WORLD[0].length;
+  for(let i=0;i<N;i++){
+    const y = 1 - (i/(N-1))*2;
+    const r = Math.sqrt(Math.max(0,1-y*y));
+    const th = i * Math.PI * (3 - Math.sqrt(5));
+    const p = {x:Math.cos(th)*r, y:y, z:Math.sin(th)*r};
+    const lat = Math.asin(y)*180/Math.PI;
+    const lon = Math.atan2(p.z,p.x)*180/Math.PI;
+    const rr = Math.min(rows-1, Math.max(0, Math.round((90-lat)/180*(rows-1))));
+    const cc = Math.min(cols-1, Math.max(0, Math.round((lon+180)/360*(cols-1))));
+    p.land = WORLD[rr][cc] === "#";
+    p.j = Math.random();
+    PTS.push(p);
+  }
+})();
+
+function resize(){
+  DPR = Math.min(2, devicePixelRatio||1);
+  const b = cv.getBoundingClientRect();
+  W=b.width; H=b.height;
+  cv.width=W*DPR; cv.height=H*DPR;
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  R = Math.min(W,H)*0.34;
+  CXp = W/2; CYp = H/2;
+  const oc=$("orbitline"), ob=oc.getBoundingClientRect();
+  oc.width=ob.width*DPR; oc.height=ob.height*DPR;
+  oc.getContext("2d").setTransform(DPR,0,0,DPR,0,0);
+  placeNodes();
+}
+
+function draw(){
+  cx.clearRect(0,0,W,H);
+
+  // core light
+  const halo = cx.createRadialGradient(CXp,CYp,0,CXp,CYp,R*2.3);
+  halo.addColorStop(0,`rgba(240,211,132,${.13+pulse*.3})`);
+  halo.addColorStop(.42,"rgba(240,211,132,.045)");
+  halo.addColorStop(1,"rgba(240,211,132,0)");
+  cx.fillStyle=halo; cx.fillRect(0,0,W,H);
+
+  yaw += (tYaw-yaw)*.055 + spin;
+  pitch += (tPitch-pitch)*.055;
+
+  const cy=Math.cos(pitch), sy=Math.sin(pitch);
+  const cz=Math.cos(yaw),   sz=Math.sin(yaw);
+  const out=[];
+  for(const p of PTS){
+    let x=p.x*cz - p.z*sz, z=p.x*sz + p.z*cz, y=p.y;
+    const y2=y*cy - z*sy, z2=y*sy + z*cy;
+    out.push({sx:CXp+x*R, sy:CYp+y2*R, z:z2, land:p.land, j:p.j});
+  }
+  out.sort((a,b)=>a.z-b.z);
+
+  for(const p of out){
+    const depth=(p.z+1)/2;
+    let a = .1 + depth*.85;
+    let s = (1.6 + depth*2.5) * (R/230);
+    if(mx>-9e8){
+      const d=Math.hypot(p.sx-mx,p.sy-my);
+      if(d<105){ const k=(1-d/105); a=Math.min(1,a+k*.55); s*=1+k*.75; }
+    }
+    a *= .55 + p.j*.45;
+    if(pulse>0) s *= 1+pulse*.5;
+    cx.fillStyle = p.land
+      ? `rgba(${185+pulse*60},${206},${126},${a})`
+      : `rgba(44,${90+pulse*40},99,${a*.82})`;
+    cx.fillRect(p.sx-s/2, p.sy-s/2, s, s);
+  }
+
+  // beam beneath
+  const beam=cx.createLinearGradient(CXp,CYp+R*.7,CXp,CYp+R*2.2);
+  beam.addColorStop(0,`rgba(240,211,132,${.24+pulse*.3})`);
+  beam.addColorStop(1,"rgba(240,211,132,0)");
+  cx.fillStyle=beam;
+  cx.beginPath();
+  cx.moveTo(CXp-R*.16,CYp+R*.7); cx.lineTo(CXp+R*.16,CYp+R*.7);
+  cx.lineTo(CXp+R*.75,CYp+R*2.2); cx.lineTo(CXp-R*.75,CYp+R*2.2);
+  cx.closePath(); cx.fill();
+
+  if(pulse>0) pulse=Math.max(0,pulse-.014);
+  requestAnimationFrame(draw);
+}
+
+cv.addEventListener("pointermove",e=>{
+  const b=cv.getBoundingClientRect();
+  mx=e.clientX-b.left; my=e.clientY-b.top;
+  tYaw = (mx-CXp)/W * 1.5;
+  tPitch = -.22 + (my-CYp)/H * .85;
+});
+cv.addEventListener("pointerleave",()=>{ mx=my=-9e9; tYaw=yaw; tPitch=-.22; });
+
+/* ========================== pipeline platform ========================== */
+let nodes=[], active=-1, reached=-1;
+
+function placeNodes(){
+  const host=$("platform"), b=host.getBoundingClientRect();
+  host.querySelectorAll(".node").forEach(n=>n.remove());
+  nodes=[];
+  const cxp=b.width/2, cyp=b.height*0.30;
+  const rx=Math.min(b.width*0.44, 560), ry=b.height*0.36;
+  STAGES.forEach(([id,name],i)=>{
+    const t = Math.PI + (i/(STAGES.length-1))*Math.PI;   // left arc to right
+    const x = cxp + Math.cos(t)*rx*-1;
+    const y = cyp + Math.abs(Math.sin(t))*ry;
+    const btn=document.createElement("button");
+    btn.className="node"; btn.style.left=x+"px"; btn.style.top=y+"px";
+    btn.setAttribute("aria-label",`Stage ${i+1}: ${name}`);
+    btn.innerHTML=`<span class="idx">${String(i+1).padStart(2,"0")}</span>
+      <span class="bulb"></span><span class="lbl">${esc(name)}</span>`;
+    btn.addEventListener("click",()=>openStage(i));
+    host.appendChild(btn); nodes.push(btn);
+  });
+  drawOrbit();
+  paintNodes();
+}
+
+function drawOrbit(){
+  const oc=$("orbitline"), g=oc.getContext("2d");
+  const b=oc.getBoundingClientRect();
+  g.clearRect(0,0,b.width,b.height);
+  const cxp=b.width/2, cyp=b.height*0.30;
+  const rx=Math.min(b.width*0.44,560), ry=b.height*0.36;
+  g.strokeStyle="rgba(201,162,39,.28)"; g.lineWidth=1;
+  g.beginPath(); g.ellipse(cxp,cyp,rx,ry,0,0,Math.PI); g.stroke();
+  g.strokeStyle="rgba(201,162,39,.10)";
+  g.beginPath(); g.ellipse(cxp,cyp,rx*1.14,ry*1.5,0,0,Math.PI); g.stroke();
+}
+
+function paintNodes(){
+  nodes.forEach((n,i)=>{
+    n.classList.toggle("live", i===active);
+    n.classList.toggle("done", i<=reached && i!==active);
+  });
+}
+
+/* ============================== panel ================================== */
+let report=null;
+
+function openPanel(eyebrow,title,html){
+  $("peyebrow").textContent=eyebrow;
+  $("ptitle").textContent=title;
+  $("body").innerHTML=html;
+  $("panel").classList.add("open");
+  $("panel").setAttribute("aria-hidden","false");
+  $("close").focus();
+}
+function closePanel(){
+  $("panel").classList.remove("open");
+  $("panel").setAttribute("aria-hidden","true");
+  nodes.forEach(n=>n.classList.remove("sel"));
+}
+$("close").addEventListener("click",closePanel);
+addEventListener("keydown",e=>{ if(e.key==="Escape") closePanel(); });
+
+function openStage(i){
+  const [id,name]=STAGES[i];
+  nodes.forEach(n=>n.classList.remove("sel"));
+  nodes[i].classList.add("sel");
+  const rec=(report?.records||[]).find(r=>r.id===id);
+  const state = i===active ? "Working" : (i<=reached ? "Passed" : "Not started");
+  openPanel(`Stage ${String(i+1).padStart(2,"0")} · ${state}`, name, `
+    <div class="tagrow">
+      <span class="tag ${i===active?"live":""}">${esc(state)}</span>
+      <span class="tag">${esc(rec?.status || "record not found")}</span>
+      ${rec?.references?.length?`<span class="tag">refs ${esc(rec.references.join(", "))}</span>`:""}
+    </div>
+    <h3>Purpose</h3><p>${esc(STAGE_BLURB[id]||"")}</p>
+    <h3>Record</h3>
+    ${rec ? `<p class="path">${esc(rec.path)}</p>
+      <p>Protocol, principles, exit gate and append-only memory live in the record file. This panel shows only what the report carries.</p>`
+      : `<div class="warn">No <code>${esc(id)}</code> record in the loaded report. The stage is displayed from the interface's own list, which means this view is not fully backed by AEOS output.</div>`}
+    <h3>Notes</h3>
+    <p class="note">Stage state here is a local view. It is not a validated gate result — AEOS does not yet enforce stage gates. That is scheduled behind REQ-CLI-006.</p>
+  `);
+}
+
+/* =========================== drag and drop ============================= */
+let dragDepth=0;
+["dragenter","dragover"].forEach(ev=>addEventListener(ev,e=>{
+  e.preventDefault();
+  if(ev==="dragenter") dragDepth++;
+  $("dropHint").classList.add("on");
+}));
+["dragleave","drop"].forEach(ev=>addEventListener(ev,e=>{
+  e.preventDefault();
+  if(ev==="dragleave"){ dragDepth=Math.max(0,dragDepth-1); if(dragDepth) return; }
+  dragDepth=0; $("dropHint").classList.remove("on");
+}));
+
+addEventListener("drop",e=>{
+  const files=[...(e.dataTransfer?.files||[])];
+  if(!files.length) return;
+  pulse=1; spin=0.006;
+  setTimeout(()=>spin=0.0016,2600);
+  proposeIntake(files);
+});
+
+function fmt(n){
+  if(n<1024) return n+" B";
+  if(n<1048576) return (n/1024).toFixed(1)+" KB";
+  return (n/1048576).toFixed(1)+" MB";
+}
+
+function proposeIntake(files){
+  const total=files.reduce((a,f)=>a+f.size,0);
+  const exts={};
+  files.forEach(f=>{ const m=f.name.match(/\.[^.]+$/); const k=m?m[0]:"(none)"; exts[k]=(exts[k]||0)+1; });
+  const kinds=Object.entries(exts).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`${esc(k)} ×${v}`).join(" · ");
+
+  openPanel("Intake · proposal", `${files.length} item${files.length>1?"s":""} received`, `
+    <div class="warn">Nothing has been read, copied, moved or modified. This is a proposal. AEOS does not act on dropped files without confirmation, and this preview cannot run the pipeline at all — it has no validator.</div>
+    <h3>Received</h3>
+    <ul class="filelist">
+      ${files.slice(0,14).map(f=>`<li><span>${esc(f.name)}</span><span class="sz">${fmt(f.size)}</span></li>`).join("")}
+      ${files.length>14?`<li><span>… ${files.length-14} more</span><span class="sz"></span></li>`:""}
+    </ul>
+    <h3>Observed</h3>
+    <p>${esc(String(files.length))} item(s), ${fmt(total)} total.</p>
+    <p>${kinds}</p>
+    <p class="note">Names and sizes only. File contents were not opened — a browser preview reading project contents would be doing validation, which belongs to the CLI.</p>
+    <h3>What real intake requires</h3>
+    <p>Point the validator at the directory:</p>
+    <p><code>aeos check --format json</code></p>
+    <h3>Simulate</h3>
+    <p>Walk the pipeline visually to see how stage lighting behaves. This proves nothing about these files.</p>
+    <button class="btn" id="sim">Walk the pipeline</button>
+    <button class="btn ghost" id="reset">Reset</button>
+  `);
+  $("sim").addEventListener("click",()=>runWalk());
+  $("reset").addEventListener("click",()=>{ active=-1; reached=-1; paintNodes(); closePanel(); });
+}
+
+let walkTimer=null;
+function runWalk(){
+  clearInterval(walkTimer);
+  active=-1; reached=-1; paintNodes();
+  let i=0;
+  const step=()=>{
+    if(i>=STAGES.length){
+      clearInterval(walkTimer);
+      active=-1; reached=STAGES.length-1; paintNodes();
+      $("strip").textContent="Simulated walk complete · no validation was performed";
+      return;
+    }
+    active=i; reached=i; paintNodes(); i++;
+  };
+  step();
+  walkTimer=setInterval(step, calm?60:900);
+}
+
+/* ============================== report ================================= */
+function pipFor(r){
+  return r==="PASS"?"pass":r==="PASS_WITH_WARNINGS"?"warn":r==="FAIL"?"fail":"unk";
+}
+
+function applyReport(r){
+  report=r;
+  const s=r.summary||{}, p=r.project||{};
+  $("statesL").innerHTML=[
+    ["Result", r.result||"UNKNOWN", pipFor(r.result)],
+    ["Records", s.records_discovered ?? "unknown", "unk"],
+    ["Findings", (r.findings||[]).length, (r.findings||[]).length?"warn":"pass"]
+  ].map(([k,v,c])=>`<span class="st"><span class="pip ${c}"></span>${esc(k)} <b>${esc(v)}</b></span>`).join("");
+  $("statesR").innerHTML=[
+    ["Project", p.name||"unknown"],
+    ["Level", `${p.level||"?"} / ${p.security_level||"?"}`],
+    ["Schema", r.schema_version||"unknown"]
+  ].map(([k,v])=>`<span class="st"><span class="pip unk"></span>${esc(k)} <b>${esc(v)}</b></span>`).join("");
+  $("strip").textContent =
+    `Read-only preview · ${r.result||"UNKNOWN"} · ${s.records_discovered ?? "?"} records · schema ${r.schema_version||"?"} · computes nothing`;
+}
+
+function noReport(reason){
+  $("statesL").innerHTML=`<span class="st"><span class="pip unk"></span>Result <b>Unknown</b></span>
+    <span class="st"><span class="pip unk"></span>Records <b>Unknown</b></span>`;
+  $("statesR").innerHTML=`<span class="st"><span class="pip unk"></span>Report <b>Not loaded</b></span>`;
+  $("strip").textContent=`No report loaded — ${reason}. Run ./preview/build.sh and serve over HTTP.`;
+}
+
+/* Embedded snapshot so the interface is honest offline; a live fetch
+   replaces it when the directory is served over HTTP. */
+const EMBEDDED = __REPORT__;
+
+applyReport(EMBEDDED);
+fetch("report.json",{cache:"no-store"})
+  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(r=>{ applyReport(r); $("strip").textContent += " · live"; })
+  .catch(()=>{ $("strip").textContent += " · embedded snapshot"; });
+
+addEventListener("resize",resize);
+resize();
+draw();
+</script>
+</body>
+</html>

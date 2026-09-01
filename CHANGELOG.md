@@ -4,6 +4,17 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.9] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **Command interface** (`preview/command.html`). Voxel globe rendering the engine, whose first voxels are the project's real records. Cursor-reactive surface, eight interactive stage orbs generated from STAGE records, per-stage panels showing protocol, principles, exit gate and memory, and drag-and-drop Intake that proposes a classification without reading, moving or writing anything.
+- **`pipeline.current_stage`** in the manifest, surfaced in the report. Declarative: AEOS reports what a project claims about its position, and never infers it. Report schema `0.2` → `0.3`.
+
+### Fixed
+- The earlier preview could not load its data when opened directly, because browsers block fetch on the `file://` origin. Report and stage data are now embedded at build time.
+
 ## [0.0.8] — 2026-08-31
 
 Milestone: M6 (Dogfood) in progress. M1–M5 complete.

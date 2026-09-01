@@ -1,7 +1,7 @@
 ---
 aeos_record: STATUS
 updated: 2026-08-31
-version: "0.0.8"
+version: "0.0.9"
 environment: development
 ---
 
@@ -47,6 +47,7 @@ When the target is a Git repository, secret scanning uses both current-directory
 1. `REQ-CLI-006` STATUS staleness remains unimplemented; freshness configuration must be built before detection. This is now the single remaining M6 blocker.
 2. Stage gate enforcement — refusing to report readiness when a required stage record is missing or stale — needs new code and is scheduled behind item 1, which supplies the freshness mechanism it depends on.
 3. The CLI has no `--version` flag; the binary cannot report what it is.
+4. Six of the eight pipeline stages have no automated check. Only the Security and Report gates produce findings today; the command interface states this rather than showing the others as passing.
 
 ## Closed M6 Gaps
 - Record index in the JSON report — closed by CHG-020, schema 0.2.
