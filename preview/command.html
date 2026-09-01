@@ -55,7 +55,7 @@ body{
   text-shadow:0 0 26px rgba(232,203,114,.34)}
 #title p{margin:9px 0 0;font-size:8.5px;letter-spacing:.34em;color:var(--marble-3)}
 
-#creed{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:6;
+#creed{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:6;
   text-align:center;pointer-events:none;width:min(94vw,760px)}
 #creed .k{font-size:8.5px;letter-spacing:.44em;color:var(--gilt-dim)}
 #creed .v{margin:9px 0 0;font-size:12px;font-style:italic;color:var(--marble-3)}
@@ -117,7 +117,7 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
 #dropZone p{margin:11px 0 0;font-size:11px;letter-spacing:.16em;color:var(--marble-3);
   font-family:"IBM Plex Mono",monospace;text-transform:uppercase}
 
-#hint{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:6;
+#hint{position:fixed;bottom:66px;left:50%;transform:translateX(-50%);z-index:6;
   font-size:8.5px;letter-spacing:.24em;color:var(--marble-3);opacity:.62;pointer-events:none;
   font-family:"IBM Plex Mono",monospace;text-transform:uppercase;text-align:center}
 
@@ -177,7 +177,7 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   <p class="mono">Personal Engineering Command System</p>
 </div>
 
-<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb</div>
+<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb or press 1–8</div>
 
 <div id="creed">
   <p class="k mono">Integrate · Orchestrate · Elevate</p>
@@ -212,6 +212,49 @@ const NAMES = {
  "STAGE-07-RELEASE":"Release","STAGE-08-REPORT":"Report"};
 const TYPE_COLOR = {REQ:[201,162,39],ADR:[126,144,104],STAGE:[232,203,114],
   AUDIT:[180,87,58],PROJECT:[232,224,210],STATUS:[189,178,160]};
+
+/* Each stage carries its own hue, voxel texture and glyph, so the orbs are
+   distinguishable by silhouette and colour before any label is read.
+   Textures: band = latitude rings, lattice = ordered grid, scatter = loose,
+   dense = packed shell, spiral = drawn inward, shard = broken plates. */
+const STAGE_SKIN = {
+  "STAGE-01-INTAKE":     {hue:[214,196,150], tex:"funnel",  glyph:"funnel"},
+  "STAGE-02-DESIGN":     {hue:[166,182,196], tex:"lattice", glyph:"compass"},
+  "STAGE-03-BUILD":      {hue:[206,150,92],  tex:"blocks",  glyph:"blocks"},
+  "STAGE-04-QA":         {hue:[142,178,138], tex:"band",    glyph:"lens"},
+  "STAGE-05-SECURITY":   {hue:[198,128,88],  tex:"dense",   glyph:"shield"},
+  "STAGE-06-COMPLIANCE": {hue:[224,216,202], tex:"scatter", glyph:"scales"},
+  "STAGE-07-RELEASE":    {hue:[236,204,110], tex:"spiral",  glyph:"ascend"},
+  "STAGE-08-REPORT":     {hue:[178,166,190], tex:"shard",   glyph:"scroll"}
+};
+const FALLBACK_SKIN = {hue:[201,162,39], tex:"scatter", glyph:"scroll"};
+
+/* Glyphs are drawn in a unit box centred on 0,0 spanning roughly -1..1. */
+const GLYPH = {
+  funnel(c){ c.beginPath(); c.moveTo(-1,-.72); c.lineTo(1,-.72); c.lineTo(.2,.12);
+             c.lineTo(.2,.92); c.lineTo(-.2,.66); c.lineTo(-.2,.12); c.closePath(); c.stroke(); },
+  compass(c){ c.beginPath(); c.moveTo(0,-.92); c.lineTo(-.62,.86); c.moveTo(0,-.92); c.lineTo(.62,.86);
+              c.stroke(); c.beginPath(); c.arc(0,-.92,.16,0,7); c.stroke();
+              c.beginPath(); c.moveTo(-.34,.2); c.lineTo(.34,.2); c.stroke(); },
+  blocks(c){ c.strokeRect(-.9,-.1,.8,.8); c.strokeRect(.1,-.1,.8,.8); c.strokeRect(-.4,-.9,.8,.8); },
+  lens(c){ c.beginPath(); c.arc(-.16,-.16,.66,0,7); c.stroke();
+           c.beginPath(); c.moveTo(.32,.32); c.lineTo(.92,.92); c.stroke();
+           c.beginPath(); c.moveTo(-.48,-.16); c.lineTo(-.2,.14); c.lineTo(.2,-.5); c.stroke(); },
+  shield(c){ c.beginPath(); c.moveTo(0,-.94); c.lineTo(.82,-.56); c.lineTo(.82,.14);
+             c.quadraticCurveTo(.82,.72,0,.96); c.quadraticCurveTo(-.82,.72,-.82,.14);
+             c.lineTo(-.82,-.56); c.closePath(); c.stroke(); },
+  scales(c){ c.beginPath(); c.moveTo(0,-.9); c.lineTo(0,.7); c.moveTo(-.9,-.56); c.lineTo(.9,-.56);
+             c.moveTo(-.42,.7); c.lineTo(.42,.7); c.stroke();
+             c.beginPath(); c.moveTo(-.9,-.56); c.lineTo(-1.14,.06); c.lineTo(-.66,.06); c.closePath(); c.stroke();
+             c.beginPath(); c.moveTo(.9,-.56); c.lineTo(.66,.06); c.lineTo(1.14,.06); c.closePath(); c.stroke(); },
+  ascend(c){ c.beginPath(); c.moveTo(0,-.96); c.lineTo(0,.62); c.stroke();
+             c.beginPath(); c.moveTo(-.5,-.4); c.lineTo(0,-.96); c.lineTo(.5,-.4); c.stroke();
+             c.beginPath(); c.moveTo(-.78,.9); c.quadraticCurveTo(0,.44,.78,.9); c.stroke(); },
+  scroll(c){ c.beginPath(); c.moveTo(-.68,-.9); c.lineTo(.68,-.9); c.lineTo(.68,.9);
+             c.lineTo(-.68,.9); c.closePath(); c.stroke();
+             for(let i=0;i<3;i++){ const y=-.4+i*.42;
+               c.beginPath(); c.moveTo(-.38,y); c.lineTo(.38,y); c.stroke(); } }
+};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -253,8 +296,8 @@ function resize(){
   cv.width = W*DPR; cv.height = H*DPR;
   cv.style.width = W+"px"; cv.style.height = H+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  cx = W/2; cy = H*0.435;
-  R = Math.min(W*0.19, H*0.29, 250);
+  cx = W/2; cy = H*0.355;
+  R = Math.min(W*0.17, H*0.235, 228);
 }
 addEventListener("resize", resize);
 
@@ -286,7 +329,11 @@ const ORBS = [];
 function buildOrbs(){
   ORBS.length = 0;
   const ids = stageIds.length ? stageIds : Object.keys(NAMES);
-  ids.forEach((id,i)=>ORBS.push({id, name:NAMES[id]||id, i, a:0, x:0, y:0, r:0, glow:0}));
+  ids.forEach((id,i)=>{
+    const skin = STAGE_SKIN[id] || FALLBACK_SKIN;
+    ORBS.push({id, name:NAMES[id]||id, i, x:0, y:0, r:0, glow:0,
+               hue:skin.hue, tex:skin.tex, glyph:skin.glyph});
+  });
 }
 
 function project(p, sy, cyaw, sp, cp){
@@ -355,7 +402,7 @@ function frame(t){
 }
 
 function drawPlatform(rad){
-  const py = cy + rad*1.34, rx = rad*2.55, ry = rad*.55;
+  const py = cy + rad*1.30, rx = rad*2.62, ry = rad*.5;
   ctx.save();
   ctx.strokeStyle="rgba(201,162,39,.2)"; ctx.lineWidth=1;
   for(let k=1;k<=3;k++){
@@ -367,48 +414,156 @@ function drawPlatform(rad){
   ctx.restore();
 }
 
+function texturePoints(tex, k, n, spin){
+  /* returns {x,y,z} on a unit sphere; each texture arranges its shell
+     differently so the orbs differ by surface, not only by colour */
+  const g = 2.39996;
+  switch(tex){
+    case "band": {                       // stacked latitude rings
+      const row = Math.floor(k/9), col = k%9;
+      const yy = 1 - (row/5)*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = (col/9)*6.283 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "lattice": {                    // ordered grid
+      const row = Math.floor(k/8), col = k%8;
+      const yy = 1 - (row/6.2)*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = (col/8)*6.283 + row*.14 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "blocks": {                     // coarse, few large plates
+      const yy = 1 - (Math.floor(k/6)/4.4)*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = (Math.floor(k%6)/6)*6.283 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "dense": {                      // packed protective shell
+      const yy = 1-(k/(n-1))*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = g*k + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "spiral": {                     // drawn upward and inward
+      const f = k/n, yy = 1-f*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = f*22 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "shard": {                      // broken plates with gaps
+      if(k%3===2) return null;
+      const yy = 1-(k/(n-1))*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = g*k*1.7 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    case "funnel": {                     // heavier at the top, tapering down
+      const f = Math.pow(k/n, .55), yy = 1-f*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = g*k + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+    default: {                           // scatter
+      const yy = 1-(k/(n-1))*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
+      const th = g*k*1.31 + spin;
+      return {x:Math.cos(th)*rr, y:yy, z:Math.sin(th)*rr};
+    }
+  }
+}
+
+function drawGlyph(o, lum){
+  const g = GLYPH[o.glyph]; if(!g) return;
+  const s = o.r*0.52;
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.scale(s, s);
+  ctx.lineWidth = Math.max(.10, 1.5/s);
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  // dark backing so the glyph reads against a lit shell
+  ctx.strokeStyle = `rgba(12,10,8,${.55*lum})`;
+  ctx.lineWidth = Math.max(.20, 3.2/s);
+  g(ctx);
+  ctx.strokeStyle = `rgba(255,246,224,${Math.min(1,.62+lum*.38)})`;
+  ctx.lineWidth = Math.max(.10, 1.5/s);
+  g(ctx);
+  ctx.restore();
+}
+
 function drawOrbs(rad, t){
-  const py = cy + rad*1.34, rx = rad*2.02, ry = rad*.46;
+  /* Orbs sit on the FRONT rim of the platform, entirely below the globe, so
+     nothing they need for interaction is ever occluded by the sphere. */
+  const py = cy + rad*1.34, rx = Math.min(W*0.40, rad*2.75), ry = rad*.30;
+  const tight = W < 700;   // no room for word labels; glyph and number carry it
   const n = ORBS.length || 8;
   ORBS.forEach((o,i)=>{
-    const a = Math.PI + (i+.5)*(Math.PI/n);      // front arc, left to right
-    o.x = cx + Math.cos(a)*rx;
-    o.y = py + Math.sin(a)*ry;
-    const isActive = o.id === activeStage, isOpen = o.id === openStage;
-    const target = (isActive?1:0) + (i===hoverOrb?.55:0) + (isOpen?.5:0);
-    o.glow += (Math.min(1.6,target) - o.glow)*.12;
-    o.r = rad*.108 * (1 + o.glow*.2);
+    if(tight){
+      // Two rows of four. Shrinking eight onto one arc would make them
+      // smaller than a fingertip; splitting keeps every orb reachable.
+      const row = Math.floor(i/4), col = i%4;
+      const gap = Math.min(W*0.22, 92);
+      o.x = cx + (col-1.5)*gap;
+      o.y = py + rad*.18 + row*Math.min(W*0.20, 84);
+    } else {
+      const a = Math.PI - Math.PI*(i+.5)/n; // left to right along the near edge
+      o.x = cx + Math.cos(a)*rx;
+      o.y = py + Math.sin(a)*ry;
+    }
 
-    // aura
-    if(o.glow>.02){
-      const g = ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r*3.6);
-      g.addColorStop(0,`rgba(232,203,114,${.34*o.glow})`);
-      g.addColorStop(1,"rgba(232,203,114,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*3.6,0,7); ctx.fill();
+    const isActive = o.id === activeStage, isOpen = o.id === openStage;
+    const target = (isActive?1:.34) + (i===hoverOrb?.5:0) + (isOpen?.4:0);
+    o.glow += (Math.min(1.7,target) - o.glow)*.12;
+    o.r = (tight ? Math.min(W*0.062, 25) : rad*.132) * (1 + o.glow*.10);
+
+    const [hr,hg,hb] = o.hue;
+
+    // seated shadow, so each orb rests on the rim rather than floating
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,.34)";
+    ctx.beginPath(); ctx.ellipse(o.x, o.y+o.r*1.16, o.r*.95, o.r*.24, 0, 0, 7); ctx.fill();
+    ctx.restore();
+
+    // aura in the stage's own hue
+    const g = ctx.createRadialGradient(o.x,o.y,o.r*.4,o.x,o.y,o.r*3.1);
+    g.addColorStop(0,`rgba(${hr},${hg},${hb},${.30*o.glow})`);
+    g.addColorStop(1,`rgba(${hr},${hg},${hb},0)`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*3.1,0,7); ctx.fill();
+
+    // core so glyphs have something to sit on
+    const core = ctx.createRadialGradient(o.x-o.r*.3,o.y-o.r*.35,o.r*.1,o.x,o.y,o.r);
+    core.addColorStop(0,`rgba(${hr},${hg},${hb},${.20+o.glow*.26})`);
+    core.addColorStop(1,`rgba(20,17,14,${.62+ (1-o.glow)*.2})`);
+    ctx.fillStyle=core; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,7); ctx.fill();
+
+    // textured voxel shell
+    const N = o.tex==="blocks" ? 30 : o.tex==="dense" ? 88 : 58;
+    const spin = calm ? 0 : t/2900 + i;
+    const pulse = isActive && !calm ? Math.sin(t/560+i)*.13+.87 : 1;
+    for(let k=0;k<N;k++){
+      const p = texturePoints(o.tex, k, N, spin);
+      if(!p || p.z < -.1) continue;
+      const sz = Math.max(1.3, o.r*(o.tex==="blocks"?.34:o.tex==="dense"?.17:.24)*(1+p.z*.34));
+      const lum = (.34 + o.glow*.56) * (.5+p.z*.5) * pulse;
+      ctx.fillStyle = `rgba(${Math.min(255,hr+40)|0},${Math.min(255,hg+34)|0},${Math.min(255,hb+22)|0},${Math.min(.96,lum)})`;
+      ctx.fillRect(o.x+p.x*o.r-sz/2, o.y+p.y*o.r-sz/2, sz, sz);
     }
-    // voxel shell
-    const seed = i*17.3, pulse = isActive && !calm ? Math.sin(t/520+i)*.14+.86 : 1;
-    for(let k=0;k<46;k++){
-      const yy = 1-(k/45)*2, rr = Math.sqrt(Math.max(0,1-yy*yy));
-      const th = 2.399*k + seed + (calm?0:t/2600);
-      const px = Math.cos(th)*rr, pz = Math.sin(th)*rr;
-      if(pz < -.15) continue;
-      const s = Math.max(1.1, o.r*.3*(1+pz*.3));
-      const lum = (.3 + o.glow*.62) * (.55+pz*.45) * pulse;
-      ctx.fillStyle = `rgba(232,203,114,${Math.min(.95,lum)})`;
-      ctx.fillRect(o.x+px*o.r-s/2, o.y+yy*o.r-s/2, s, s);
-    }
-    // ring for the declared stage
+
+    drawGlyph(o, o.glow);
+
+    // ring marks the stage AEOS declares current
     if(isActive){
-      ctx.strokeStyle=`rgba(232,203,114,${.34+ (calm?0:Math.sin(t/620)*.16)})`;
-      ctx.lineWidth=1; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*1.85,0,7); ctx.stroke();
+      ctx.strokeStyle=`rgba(${hr},${hg},${hb},${.42+(calm?0:Math.sin(t/620)*.18)})`;
+      ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(o.x,o.y,o.r*1.62,0,7); ctx.stroke();
     }
+    if(i===hoverOrb || isOpen){
+      ctx.strokeStyle="rgba(255,246,224,.5)"; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(o.x,o.y,o.r*1.34,0,7); ctx.stroke();
+    }
+
     // label
-    ctx.font = `${i===hoverOrb||isActive?"500":"400"} 9px "IBM Plex Mono",monospace`;
     ctx.textAlign="center";
-    ctx.fillStyle = isActive ? "rgba(232,203,114,.95)"
-                  : i===hoverOrb ? "rgba(232,224,210,.9)" : "rgba(138,128,115,.72)";
-    ctx.fillText(String(i+1).padStart(2,"0")+"  "+o.name.toUpperCase(), o.x, o.y+o.r*2.5+11);
+    ctx.font = `500 8px "IBM Plex Mono",monospace`;
+    ctx.fillStyle = isActive?`rgba(${hr},${hg},${hb},.95)`:"rgba(138,128,115,.6)";
+    ctx.fillText(String(i+1).padStart(2,"0"), o.x, o.y+o.r*1.62+13);
+    if(!tight || i===hoverOrb || isActive){
+      ctx.font = `${i===hoverOrb||isActive?"500":"400"} 9px "IBM Plex Mono",monospace`;
+      ctx.fillStyle = isActive ? `rgba(${Math.min(255,hr+26)},${Math.min(255,hg+26)},${Math.min(255,hb+26)},.96)`
+                    : i===hoverOrb ? "rgba(232,224,210,.92)" : "rgba(138,128,115,.72)";
+      ctx.fillText(o.name.toUpperCase(), o.x, o.y+o.r*1.62+25);
+    }
   });
 }
 
@@ -418,12 +573,12 @@ addEventListener("pointermove", e => {
   tYaw   += ((e.clientX/W - .5) * .0009);
   tPitch = -.16 + (e.clientY/H - .5) * .30;
   let h = -1;
-  ORBS.forEach((o,i)=>{ if(Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*2.1) h=i; });
+  ORBS.forEach((o,i)=>{ if(Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*1.55) h=i; });
   if(h!==hoverOrb){ hoverOrb=h; cv.style.cursor = h>=0 ? "pointer" : "default"; }
 });
 addEventListener("pointerleave", ()=>{ mx=my=-9e9; });
 cv.addEventListener("click", e => {
-  const hit = ORBS.find(o => Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*2.1);
+  const hit = ORBS.find(o => Math.hypot(e.clientX-o.x, e.clientY-o.y) < o.r*1.55);
   if(hit) showStage(hit.id);
 });
 addEventListener("keydown", e => {
@@ -450,7 +605,11 @@ function showStage(id){
   const isActive = id === activeStage;
   let html = "";
 
-  html += `<div class="blk"><span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span></div>`;
+  const skin = STAGE_SKIN[id] || FALLBACK_SKIN;
+  html += `<div class="blk" style="display:flex;align-items:center;gap:14px">
+      <canvas id="spGlyph" width="52" height="52" style="flex:none"></canvas>
+      <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
+    </div>`;
 
   if(!s){
     html += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
@@ -477,6 +636,17 @@ function showStage(id){
   if(rec) html += `<div class="blk"><h3>Record</h3><p><code>${esc(rec.path)}</code></p></div>`;
 
   $("spBody").innerHTML = html;
+
+  // repeat the orb's glyph in its own hue, so symbol and stage stay linked
+  const gc = $("spGlyph");
+  if(gc && GLYPH[skin.glyph]){
+    const c = gc.getContext("2d");
+    c.translate(26,26); c.scale(19,19);
+    c.lineJoin="round"; c.lineCap="round";
+    c.strokeStyle=`rgb(${skin.hue[0]},${skin.hue[1]},${skin.hue[2]})`;
+    c.lineWidth=1.6/19;
+    GLYPH[skin.glyph](c);
+  }
   $("dropPanel").classList.remove("open");
   $("stagePanel").classList.add("open");
   $("spClose").focus();

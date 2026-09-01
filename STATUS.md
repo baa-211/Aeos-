@@ -1,7 +1,7 @@
 ---
 aeos_record: STATUS
 updated: 2026-08-31
-version: "0.0.9"
+version: "0.0.10"
 environment: development
 ---
 

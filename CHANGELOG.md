@@ -4,6 +4,18 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.10] — 2026-08-31
+
+Milestone: M6 (Dogfood) in progress.
+
+### Changed
+- **Stage orbs moved to the front rim of the platform.** They previously arced upward behind the globe, where the sphere occluded them and made them awkward to hit. Every orb now sits entirely below the globe's lower edge, verified geometrically at six viewport sizes.
+- **Each stage carries a glyph and its own voxel texture**, so the eight are distinguishable by silhouette and colour before any label is read: a funnel for Intake, dividers for Design, stacked plates for Build, a lens for QA, a shield for Security, scales for Compliance, an ascending mark for Release, a scroll for Report. Textures differ too — latitude bands, ordered lattice, coarse plates, packed shell, spiral, and broken shards.
+- Orbs are seated with a cast shadow so they rest on the rim rather than float, and each carries a lit core so glyphs read against the shell.
+- **Narrow viewports use two rows of four** rather than eight on one arc. Shrinking eight orbs to fit a phone would have made them smaller than a fingertip.
+- Word labels are hidden below 700px except for the hovered or declared stage; the glyph and number carry identification there.
+- Hit radius tightened to the orb itself, so labels are no longer clickable dead zones.
+
 ## [0.0.9] — 2026-08-31
 
 Milestone: M6 (Dogfood) in progress.
