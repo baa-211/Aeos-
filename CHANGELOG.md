@@ -4,6 +4,15 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.17] — 2026-09-01
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **Intake window.** A standing log of every file presented to the engine, with its classification and when it arrived. A second tab lists what the engine actually holds — the records `aeos check` discovered. The window states the difference plainly rather than blurring it: a browser is handed a dropped file's name and size and nothing else, so a drop is a reference, never a transfer. The "held from drops" figure is zero and says so.
+- **Output window.** What the engine has produced: the report with its schema version, result and findings, and a second tab listing files written but not yet committed. That list is read from git through the local server, so it is repository truth rather than the interface's account of its own actions. With no server it says so instead of showing an empty list.
+- **A dock** in the lower right with live counts, and `I` and `O` shortcuts.
+
 ## [0.0.16] — 2026-09-01
 
 Milestone: M6 (Dogfood) in progress.

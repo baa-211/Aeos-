@@ -123,6 +123,40 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
 
+/* ── dock ── */
+#dock{position:fixed;right:22px;bottom:22px;z-index:7;display:flex;flex-direction:column;gap:7px}
+.dk{display:flex;align-items:center;gap:9px;background:rgba(20,17,14,.82);
+  border:1px solid var(--edge);color:var(--marble-3);padding:9px 13px;cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;backdrop-filter:blur(8px);min-width:158px;text-align:left}
+.dk:hover{border-color:var(--gilt);color:var(--marble)}
+.dk:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.dk .c{margin-left:auto;color:var(--gilt-lit);font-size:9px}
+.dk .c.zero{color:var(--marble-3)}
+.dk .mk{width:8px;height:8px;flex:none;transform:rotate(45deg);border:1px solid currentColor}
+
+/* ── ledgers ── */
+.led{border:1px solid var(--edge);padding:11px 13px;margin:0 0 8px;
+  display:flex;gap:12px;align-items:flex-start}
+.led .ln{flex:1;min-width:0}
+.led .nm{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--marble);
+  word-break:break-all;margin:0 0 4px}
+.led .mt{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--marble-3);margin:0}
+.led .kind{font-size:12px;color:var(--marble-2);margin:5px 0 0}
+.led.risk{border-left:3px solid var(--oxide)}
+.led.held{border-left:3px solid var(--moss)}
+.led.ref{border-left:3px solid var(--marble-3)}
+.led.new{border-left:3px solid var(--gilt)}
+.gap{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:13px 15px;
+  margin:0 0 16px;font-size:12.5px;line-height:1.75;color:var(--marble-2)}
+.gap b{color:var(--marble);font-weight:500}
+.count{display:flex;gap:22px;margin:0 0 16px;flex-wrap:wrap}
+.count div{min-width:78px}
+.count .v{font-family:"Cinzel",serif;font-size:23px;color:var(--marble);line-height:1}
+.count .l{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--marble-3);margin:5px 0 0}
+
 /* ── tabs ── */
 .win-tabs{flex:none;display:flex;border-bottom:1px solid var(--edge-2);background:rgba(14,12,10,.55)}
 .win.collapsed .win-tabs{display:none}
@@ -265,7 +299,7 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
   <h1>AEOS</h1>
 </div>
 
-<div id="hint" class="mono">Drag a file onto the globe to begin intake · Click a stage orb or press 1–8 · Amber marks a decision waiting</div>
+<div id="hint" class="mono">Drag a file onto the globe · Stage orbs 1–8 · Amber marks a decision waiting · I intake · O output</div>
 
 <div id="creed">
   <p class="k mono">Integrate · Orchestrate · Elevate</p>
@@ -276,6 +310,11 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
   <div class="msg"><div class="ring"></div>
     <h2>RELEASE TO BEGIN INTAKE</h2>
     <p>Nothing is written. AEOS will propose, not act.</p></div>
+</div>
+
+<div id="dock">
+  <button class="dk" id="dkIntake"><span class="mk"></span>Intake<span class="c zero" id="dkIntakeN">0</span></button>
+  <button class="dk" id="dkOutput"><span class="mk"></span>Output<span class="c zero" id="dkOutputN">0</span></button>
 </div>
 
 <div id="windows"></div>
@@ -347,6 +386,7 @@ function ingest(r){
   activeStage = (r.pipeline && r.pipeline.current_stage) || null;
   paintHud();
   buildOrbs();
+  paintDock();
 }
 
 function paintHud(){
@@ -809,7 +849,10 @@ addEventListener("keydown", e => {
   const tag = (e.target.tagName||"").toLowerCase();
   if(tag === "input" || tag === "textarea") return;
   const n = parseInt(e.key,10);
-  if(n>=1 && n<=8 && ORBS[n-1]) showStage(ORBS[n-1].id);
+  if(n>=1 && n<=8 && ORBS[n-1]){ showStage(ORBS[n-1].id); return; }
+  const k = e.key.toLowerCase();
+  if(k === "i"){ showIntake(); return; }
+  if(k === "o"){ showOutput(); return; }
 });
 
 /* ─────────── window manager ─────────── */
@@ -1421,7 +1464,7 @@ addEventListener("drop", e => {
   e.preventDefault(); dragDepth=0;
   $("dropZone").classList.remove("on"); dropping=false;
   const files = [...(e.dataTransfer?.files||[])];
-  if(files.length) proposeIntake(files);
+  if(files.length){ ledger.add(files); proposeIntake(files); }
 });
 
 const CLASSIFY = [
@@ -1468,9 +1511,168 @@ function proposeIntake(files){
       Run <code>aeos check</code> to produce a real report.</div>`;
 }
 
+/* ─────────── intake ledger ─────────── */
+/* Every file presented to the engine is logged here. What is logged is a
+   reference: name, size, date, classification. The browser never reads a
+   dropped file's contents, so the engine does not hold it. That gap is the
+   most important thing this window shows, and it is stated rather than
+   glossed over. */
+const ledger = {
+  all: () => store.get("intake.ledger", []),
+  add(files){
+    const now = new Date().toISOString().slice(0,16).replace("T"," ");
+    const next = this.all();
+    files.forEach(f => next.unshift({
+      name: f.name, size: f.size, at: now, kind: classify(f.name).kind
+    }));
+    store.set("intake.ledger", next.slice(0, 300));
+    paintDock();
+  },
+  clear(){ store.set("intake.ledger", []); paintDock(); }
+};
+
+function paintDock(){
+  const n = ledger.all().length;
+  $("dkIntakeN").textContent = n;
+  $("dkIntakeN").className = "c" + (n ? "" : " zero");
+  const held = (report.records || []).length;
+  $("dkOutputN").textContent = held;
+  $("dkOutputN").className = "c" + (held ? "" : " zero");
+}
+
+function showIntake(){
+  const w = makeWindow("ledger:intake", {
+    id: "Stage 01 · Intake", title: "What has been presented",
+    hue: STAGE_SKIN["STAGE-01-INTAKE"].hue,
+    width: 520, height: Math.min(600, innerHeight-140)
+  });
+
+  const log = ledger.all();
+  const held = report.records || [];
+  const risky = log.filter(e => /Credential|Environment/.test(e.kind));
+
+  const presented = `
+    <div class="count">
+      <div><p class="v">${log.length}</p><p class="l">Presented</p></div>
+      <div><p class="v">0</p><p class="l">Held from drops</p></div>
+      <div><p class="v">${risky.length}</p><p class="l">Would block</p></div>
+    </div>
+    <div class="gap"><b>Presenting a file is not the same as the engine holding it.</b>
+      A browser is given a file's name and size on drop, nothing more. Its contents were never
+      read, and it was never copied anywhere. This list is a record of what was shown to the
+      engine and how Intake classified it — the files themselves are still exactly where you
+      left them. To bring something in, put it in the repository and run <code>aeos check</code>.</div>
+    ${risky.length ? `<div class="gap" style="border-left-color:var(--oxide)">
+      <b>${risky.length} of these would block at the Security gate.</b>
+      Credential material and environment files fail before Build. If any value in them is real,
+      treat it as exposed and rotate it.</div>` : ""}
+    ${log.length ? log.map(e => `
+      <div class="led ${/Credential|Environment/.test(e.kind) ? "risk" : "ref"}">
+        <div class="ln"><p class="nm">${esc(e.name)}</p>
+          <p class="kind">${esc(e.kind)}</p>
+          <p class="mt">${esc(e.at)} · ${(e.size/1024).toFixed(1)} KB · referenced, not held</p></div>
+      </div>`).join("")
+      : `<p style="font-size:13px;color:var(--marble-3)">Nothing has been presented yet. Drag a file onto the globe.</p>`}
+    ${log.length ? `<div class="cmt-row"><button class="btn" data-a="ledger-clear">Clear this log</button></div>` : ""}`;
+
+  const holding = `
+    <div class="count">
+      <div><p class="v">${held.length}</p><p class="l">Records held</p></div>
+      <div><p class="v">${new Set(held.map(r=>r.type)).size}</p><p class="l">Types</p></div>
+    </div>
+    <div class="gap"><b>This is what the engine actually has.</b>
+      Every item was discovered in the repository by <code>aeos check</code>, indexed, and
+      reference-checked. Nothing here came from a drop.</div>
+    ${Object.entries(held.reduce((a,r)=>((a[r.type] ||= []).push(r), a), {}))
+      .map(([type, rs]) => `<div class="blk"><h3>${esc(type)} · ${rs.length}</h3>` +
+        rs.map(r => `<div class="led held"><div class="ln">
+            <p class="nm">${esc(r.id)}</p>
+            <p class="mt">${esc(r.status || "no status")} · ${esc(r.path)}</p></div></div>`).join("") +
+        `</div>`).join("")}`;
+
+  setTabs(w, "ledger:intake", [
+    {id:"presented", label:"Presented", badge: log.length || 0, html: presented},
+    {id:"holding",   label:"Held",      html: holding}
+  ]);
+
+  const clr = w.el.querySelector('[data-a="ledger-clear"]');
+  if(clr) clr.onclick = () => {
+    if(!confirm("Clear the intake log? The files themselves are untouched.")) return;
+    ledger.clear(); closeWin("ledger:intake"); showIntake();
+  };
+}
+
+/* ─────────── output ledger ─────────── */
+/* What the engine has produced. The report is real and dated. Changed records
+   come from git, so nothing here is the interface's own account of itself. */
+function showOutput(){
+  const w = makeWindow("ledger:output", {
+    id: "Stage 08 · Report & Documentation", title: "What the engine produced",
+    hue: STAGE_SKIN["STAGE-08-REPORT"].hue,
+    width: 520, height: Math.min(600, innerHeight-140)
+  });
+
+  const s = report.summary || {};
+  const artifacts = `
+    <div class="count">
+      <div><p class="v">${s.records_discovered ?? "—"}</p><p class="l">Records read</p></div>
+      <div><p class="v">${(report.findings||[]).length}</p><p class="l">Findings</p></div>
+      <div><p class="v">${report.result === "PASS" ? "PASS" : report.result || "—"}</p><p class="l">Result</p></div>
+    </div>
+    <div class="led new"><div class="ln">
+      <p class="nm">preview/report.json</p>
+      <p class="kind">The deterministic report. Every number in this interface is read from it.</p>
+      <p class="mt">schema ${esc(report.schema_version || "?")} · ${esc(report.manifest_path || "aeos.yaml")}</p></div></div>
+    ${(report.findings||[]).length ? `<div class="blk"><h3>Findings carried in it</h3>` +
+      (report.findings||[]).map(f=>`<div class="led ${f.severity==="CRITICAL"||f.severity==="ERROR"?"risk":"ref"}">
+        <div class="ln"><p class="nm">${esc(f.rule)}</p>
+          <p class="kind">${esc(f.message)}</p>
+          <p class="mt">${esc(f.severity)} · ${esc((f.paths||[]).join(", "))}</p></div></div>`).join("") +
+      `</div>` : ""}
+    <div class="gap">Regenerating this is the only way the interface changes.
+      Run <code>aeos check --format json</code>, or restart <code>preview/build.sh</code>.</div>`;
+
+  const written = `
+    <div id="gitPane"><p style="font-size:13px;color:var(--marble-3)">Reading repository state…</p></div>`;
+
+  setTabs(w, "ledger:output", [
+    {id:"artifacts", label:"Artifacts", html: artifacts},
+    {id:"written",   label:"Written",   html: written}
+  ]);
+
+  const pane = w.el.querySelector("#gitPane");
+  if(!LIVE){
+    pane.innerHTML = `<div class="gap"><b>No server running.</b>
+      Files changed since the last commit are read from git, which needs
+      <code>preview/serve.py</code>. Start it with <code>./preview/build.sh</code>.</div>`;
+    return;
+  }
+  fetch("/api/git/status", {cache:"no-store"}).then(r=>r.json()).then(d => {
+    if(!d.ok) throw new Error(d.error || "unavailable");
+    pane.innerHTML = `
+      <div class="count">
+        <div><p class="v">${d.dirty.length}</p><p class="l">Changed</p></div>
+        <div><p class="v" style="font-size:15px">${esc(d.branch)}</p><p class="l">Branch</p></div>
+      </div>
+      ${d.dirty.length
+        ? `<div class="gap">Written but not yet committed. Everything the interface wrote lands
+             here first, so nothing reaches history without you committing it.</div>` +
+          d.dirty.map(f=>`<div class="led new"><div class="ln"><p class="nm">${esc(f)}</p>
+            <p class="mt">changed · uncommitted</p></div></div>`).join("")
+        : `<div class="gap">Nothing uncommitted. The working tree matches the last commit
+             on <code>${esc(d.branch)}</code>.</div>`}`;
+  }).catch(e => {
+    pane.innerHTML = `<div class="gap">Could not read repository state: ${esc(e.message)}</div>`;
+  });
+}
+
 /* ─────────── boot ─────────── */
+$("dkIntake").onclick = showIntake;
+$("dkOutput").onclick = showOutput;
+
 resize();
 ingest(REPORT);
+paintDock();
 buildVoxels();
 requestAnimationFrame(frame);
 
