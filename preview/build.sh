@@ -28,7 +28,9 @@ python3 preview/embed.py
 result=$(python3 -c "import json;print(json.load(open('preview/report.json'))['result'])")
 echo "Report: result=$result, aeos exit=$rc"
 echo
-echo "  Open directly:  preview/command.html"
-echo "  Or serve:       http://localhost:8000/preview/command.html"
 echo
-exec python3 -m http.server 8000
+echo "Starting the local server. With it running, notes and decision"
+echo "resolutions write straight into their records. Opened as a plain file"
+echo "instead, the interface falls back to the clipboard and says so."
+echo
+exec python3 preview/serve.py

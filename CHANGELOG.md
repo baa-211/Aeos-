@@ -4,6 +4,23 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.15] — 2026-09-01
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **Notes and decisions write straight into their records.** `preview/serve.py` runs alongside the interface and appends a note under `## Memory`, or writes a decision resolution and flips its status, returning the diff. The clipboard step is gone. Opened as a plain file with no server, the interface falls back to the clipboard and states which mode it is in.
+- **Windows are tabbed.** Decisions, Notes, Ask and Method. A window opens on Decisions when something is waiting there, and remembers the tab you were last on. Reference material — purpose, principles, protocol, exit gate — moved to Method, out of the way of the work.
+- Committing from the interface, as a separate deliberate action with the diff shown first.
+
+### Changed
+- `preview/build.sh` launches the write server rather than a static one.
+- Decisions now require a written reason before they can be resolved. A choice without its reasoning becomes folklore.
+- `DEC-001` resolved: the clipboard flow was rejected by the project owner.
+
+### Security
+- The write server binds to the loopback interface only, writes exclusively to Markdown records that already exist under `docs/`, cannot create or delete files, refuses symlinks, and appends under a named heading rather than rewriting a file. Git is never touched implicitly. The validator is never invoked from the server, so the interface cannot appear to certify its own edits. Every refusal path was tested.
+
 ## [0.0.14] — 2026-08-31
 
 Milestone: M6 (Dogfood) in progress.

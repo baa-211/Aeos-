@@ -123,6 +123,31 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
 
+/* ── tabs ── */
+.win-tabs{flex:none;display:flex;border-bottom:1px solid var(--edge-2);background:rgba(14,12,10,.55)}
+.win.collapsed .win-tabs{display:none}
+.tb{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--marble-3);
+  font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;
+  padding:11px 4px;cursor:pointer;position:relative;white-space:nowrap}
+.tb:hover{color:var(--marble-2)}
+.tb[aria-selected="true"]{color:var(--gilt-lit);border-bottom-color:var(--gilt)}
+.tb:focus-visible{outline:2px solid var(--gilt);outline-offset:-3px}
+.tb .n{display:inline-block;min-width:14px;padding:1px 4px;margin-left:5px;
+  border:1px solid var(--amber);color:var(--amber);font-size:8px;line-height:1.3}
+.pane{display:none}
+.pane.on{display:block}
+
+/* ── save state ── */
+.saveline{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--marble-3);margin:12px 0 0}
+.saveline .dotm{width:5px;height:5px;border-radius:50%;background:var(--marble-3);flex:none}
+.saveline.live .dotm{background:var(--moss);box-shadow:0 0 6px rgba(126,144,104,.8)}
+.saveline.live{color:var(--moss)}
+pre.diff{background:rgba(0,0,0,.4);border:1px solid var(--edge);padding:11px 13px;margin:12px 0 0;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;line-height:1.6;color:var(--marble-3);
+  max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+pre.diff .a{color:var(--moss)} pre.diff .r{color:var(--oxide)}
+
 /* ── decisions ── */
 .dec{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:14px 16px;margin:0 0 13px}
 .dec.settled{border-left-color:var(--moss);opacity:.72}
@@ -838,10 +863,13 @@ function makeWindow(key, {id, title, hue, width, height}){
         <button class="wb" data-a="close" aria-label="Close window" title="Close (nothing is lost)">×</button>
       </div>
     </div>
+    <div class="win-tabs" role="tablist"></div>
     <div class="win-body"></div>
     <div class="win-grip" title="Resize"></div>`;
 
-  const w = {el, key, collapsed:false, body: el.querySelector(".win-body")};
+  const w = {el, key, collapsed:false,
+             body: el.querySelector(".win-body"),
+             tabs: el.querySelector(".win-tabs")};
 
   // restore where this window was last placed, or cascade from the right
   const geo = store.get("geo." + key, null);
@@ -939,67 +967,125 @@ function recordMarkdown(id, notes){
 function renderNotes(w, id){
   const notes = loadNotes(id);
   const list = w.el.querySelector("[data-notes]");
-  const exp  = w.el.querySelector('[data-a="export"]');
-  const clr  = w.el.querySelector('[data-a="clear"]');
+  if(!list) return;
   list.innerHTML = notes.length
-    ? notes.map((n,i)=>`<div class="mem mine">
-        <p class="d">${esc(n.date)} · unsaved draft</p>
+    ? `<h3 style="font-size:8.5px;color:var(--gilt-dim);margin:0 0 9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase">Unsaved drafts · ${notes.length}</h3>` +
+      notes.map((n,i)=>`<div class="mem mine">
+        <p class="d">${esc(n.date)} · not in the record</p>
         <p class="t">${esc(n.title)}</p>
         <p class="b">${esc(n.body)}</p>
-        <button class="btn" data-del="${i}" style="margin-top:8px;padding:5px 10px">Remove</button>
+        <div class="cmt-row">
+          <button class="btn" data-push="${i}">Save this one</button>
+          <button class="btn" data-del="${i}">Remove</button>
+        </div>
       </div>`).join("")
-    : `<p style="font-size:12.5px;color:var(--marble-3);margin:0">No drafted comments for this stage.</p>`;
-  if(exp) exp.disabled = !notes.length;
-  if(clr) clr.disabled = !notes.length;
+    : "";
   list.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
     const next = loadNotes(id); next.splice(+b.dataset.del, 1);
     saveNotes(id, next); renderNotes(w, id);
   });
+  list.querySelectorAll("[data-push]").forEach(b => b.onclick = () => {
+    const n = loadNotes(id)[+b.dataset.push];
+    if(n) commitNote(w, id, n, +b.dataset.push);
+  });
 }
 
-function wireComments(w, id){
+function noteBlock(n){
+  return `### ${n.date} — ${n.title}\n${n.body}\n`;
+}
+
+/* Write a note into its record. With the server present this is a direct
+   append under ## Memory; without it, the clipboard. Either way the drafted
+   copy is only discarded once the write actually succeeded. */
+async function commitNote(w, id, note, index){
+  const said = w.el.querySelector("[data-said]");
+  const diffHost = w.el.querySelector("[data-diff]");
+  const path = w.recordPath;
+  const flash = m => { said.textContent = m; setTimeout(()=>{ if(said.textContent===m) said.textContent=""; }, 5200); };
+
+  if(!LIVE){
+    await copy(noteBlock(note), said, "Copied. Paste under ## Memory, then remove the draft.");
+    return;
+  }
+  try {
+    said.textContent = "Writing…";
+    const r = await api("/api/record/append", {path, heading:"Memory", block: noteBlock(note)});
+    if(typeof index === "number"){
+      const next = loadNotes(id); next.splice(index,1); saveNotes(id, next);
+    }
+    renderNotes(w, id);
+    showDiff(diffHost, r.diff);
+    flash(`Written to ${r.path}. Run aeos check, then commit.`);
+  } catch(e){
+    showDiff(diffHost, "");
+    flash("Refused: " + e.message);
+  }
+}
+
+function wireComments(w, id, path){
+  w.recordPath = path;
   const t = w.el.querySelector("[data-title]");
   const b = w.el.querySelector("[data-body]");
   const said = w.el.querySelector("[data-said]");
+  if(!t || !b) return;
 
   // half-written text is work too; it returns when the window does
   t.value = store.get("wip.t." + id, "");
   b.value = store.get("wip.b." + id, "");
   t.addEventListener("input", () => store.set("wip.t." + id, t.value));
   b.addEventListener("input", () => store.set("wip.b." + id, b.value));
-  const flash = m => { said.textContent = m; setTimeout(()=>{ said.textContent=""; }, 3200); };
 
-  w.el.querySelector('[data-a="add"]').onclick = () => {
+  w.el.querySelector('[data-a="add"]').onclick = async () => {
     const title = t.value.trim(), body = b.value.trim();
-    if(!body){ flash("A comment needs a body."); b.focus(); return; }
-    const next = loadNotes(id);
-    next.push({date: today(), title: title || "Note", body});
-    saveNotes(id, next);
-    t.value = ""; b.value = "";
-    store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
-    renderNotes(w, id);
-    flash("Drafted. Not in the record until you paste it there.");
-  };
-
-  w.el.querySelector('[data-a="export"]').onclick = async () => {
-    const md = recordMarkdown(id, loadNotes(id));
-    try { await navigator.clipboard.writeText(md); flash("Copied. Paste under ## Memory in the stage record."); }
-    catch { 
-      const ta = document.createElement("textarea");
-      ta.value = md; ta.style.cssText = "position:fixed;opacity:0";
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); flash("Copied. Paste under ## Memory in the stage record."); }
-      catch { flash("Copy failed — select the text manually."); }
-      ta.remove();
+    if(!body){ said.textContent = "A note needs a body."; b.focus(); return; }
+    const note = {date: today(), title: title || "Note", body};
+    if(LIVE){
+      await commitNote(w, id, note, null);
+      t.value = ""; b.value = "";
+      store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
+    } else {
+      const next = loadNotes(id); next.push(note); saveNotes(id, next);
+      t.value = ""; b.value = "";
+      store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
+      renderNotes(w, id);
+      said.textContent = "Drafted. No server, so it is not in the record yet.";
+      setTimeout(()=>said.textContent="", 5200);
     }
   };
 
   w.el.querySelector('[data-a="clear"]').onclick = () => {
-    if(!confirm("Discard all drafted comments for this stage?")) return;
+    if(!loadNotes(id).length){ said.textContent = "No drafts to discard."; return; }
+    if(!confirm("Discard all unsaved drafts for this stage?")) return;
     saveNotes(id, []); renderNotes(w, id);
   };
 
   renderNotes(w, id);
+}
+
+/* ─────────── tabs ─────────── */
+/* Windows carried every section at once, which buried the decisions under
+   reference material. Each section is now a tab, and the one you were last
+   looking at is remembered per window. */
+function setTabs(w, key, defs){
+  w.tabs.innerHTML = defs.map(d =>
+    `<button class="tb" role="tab" data-tab="${d.id}" aria-selected="false">${esc(d.label)}${
+      d.badge ? `<span class="n">${d.badge}</span>` : ""}</button>`).join("");
+  w.body.innerHTML = defs.map(d =>
+    `<div class="pane" data-pane="${d.id}" role="tabpanel">${d.html}</div>`).join("");
+
+  const pick = id => {
+    w.tabs.querySelectorAll(".tb").forEach(b =>
+      b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+    w.body.querySelectorAll(".pane").forEach(p =>
+      p.classList.toggle("on", p.dataset.pane === id));
+    w.body.scrollTop = 0;
+    store.set("tab." + key, id);
+  };
+  w.tabs.querySelectorAll(".tb").forEach(b => b.onclick = () => pick(b.dataset.tab));
+
+  const saved = store.get("tab." + key, null);
+  pick(defs.some(d => d.id === saved) ? saved : defs[0].id);
+  return pick;
 }
 
 /* ─────────── decisions ─────────── */
@@ -1022,46 +1108,78 @@ function renderDecision(d){
   const picked = loadPick(d.id);
   const opts = d.options.map((o,i)=>{
     const label = o.replace(/^\d+\.\s*/,"");
-    const mine = picked === String(i);
-    return `<button class="opt ${mine?"picked":""}" data-dec="${esc(d.id)}" data-opt="${i}">
+    return `<button class="opt ${picked===String(i)?"picked":""}" data-dec="${esc(d.id)}" data-opt="${i}">
       ${label.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</button>`;
   }).join("");
+
   return `<div class="dec ${settled?"settled":""}">
     <div class="dh"><span class="did">${esc(d.id)} \u00b7 ${esc(d.status)}${d.priority?" \u00b7 "+esc(d.priority):""}</span></div>
     <h4>${esc(d.title)}</h4>
     <p class="q">${esc(d.question)}</p>
     <p class="why">${esc(d.why)}</p>
-    ${opts}
     ${d.blocks && !/^nothing/i.test(d.blocks) ? `<p class="blocks">Blocks: ${esc(d.blocks)}</p>` : ""}
-    ${settled ? `<p class="why" style="margin:11px 0 0">${esc(d.resolution).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</p>` : ""}
-    <div class="cmt-row">
-      <button class="btn" data-a="dec-copy" data-dec="${esc(d.id)}">Copy resolution for record</button>
-    </div>
-    <p class="said" data-decsaid="${esc(d.id)}"></p>
+    ${settled
+      ? `<p class="why" style="margin:12px 0 0">${esc(d.resolution).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</p>`
+      : `<div style="margin:12px 0 0">${opts}
+          <div style="display:${picked===""?"none":""};margin-top:10px">
+            <textarea class="cmt" data-why="${esc(d.id)}" style="min-height:62px"
+              placeholder="Why this option, and what it costs. This becomes the record."></textarea>
+          </div>
+          <div class="cmt-row">
+            <button class="btn primary" data-a="dec-resolve" data-dec="${esc(d.id)}"
+              data-savebtn="Resolve in record">Resolve in record</button>
+          </div>
+          <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
+          <p class="said" data-decsaid="${esc(d.id)}"></p>
+          <div data-decdiff="${esc(d.id)}"></div>`}
   </div>`;
 }
 
 function wireDecisions(w, stageId){
   const decs = DECISIONS[stageId] || [];
+
   w.el.querySelectorAll("[data-opt]").forEach(b => b.onclick = () => {
     const id = b.dataset.dec;
-    const cur = loadPick(id);
-    const next = cur === b.dataset.opt ? "" : b.dataset.opt;
+    const next = loadPick(id) === b.dataset.opt ? "" : b.dataset.opt;
     savePick(id, next);
     w.el.querySelectorAll(`[data-dec="${id}"][data-opt]`).forEach(x =>
       x.classList.toggle("picked", x.dataset.opt === next && next !== ""));
-    paintHud(); buildOrbs();
+    const why = w.el.querySelector(`[data-why="${id}"]`);
+    if(why) why.parentElement.style.display = next === "" ? "none" : "";
   });
 
-  w.el.querySelectorAll('[data-a="dec-copy"]').forEach(b => b.onclick = async () => {
-    const d = decs.find(x => x.id === b.dataset.dec);
+  w.el.querySelectorAll('[data-a="dec-resolve"]').forEach(btn => btn.onclick = async () => {
+    const d = decs.find(x => x.id === btn.dataset.dec);
     if(!d) return;
-    const pick = loadPick(d.id);
-    const chosen = pick === "" ? null : d.options[+pick];
     const said = w.el.querySelector(`[data-decsaid="${d.id}"]`);
-    if(!chosen){ said.textContent = "Choose an option first."; setTimeout(()=>said.textContent="",3200); return; }
-    const md = `status: accepted\nupdated: ${today()}\n\n## Resolution\n**Accepted ${today()}: ${chosen.replace(/\*\*/g,"").replace(/^\d+\.\s*/,"")}**\n\n<why this option, and what it costs>\n`;
-    await copy(md, said, `Copied. Paste into ${d.path} and set the status.`);
+    const diffHost = w.el.querySelector(`[data-decdiff="${d.id}"]`);
+    const flash = m => { said.textContent = m; setTimeout(()=>{ if(said.textContent===m) said.textContent=""; }, 5200); };
+
+    const pick = loadPick(d.id);
+    if(pick === ""){ flash("Choose an option first."); return; }
+    const why = (w.el.querySelector(`[data-why="${d.id}"]`)?.value || "").trim();
+    if(!why){ flash("Say why. A decision without its reasoning becomes folklore."); return; }
+
+    const chosen = d.options[+pick].replace(/\*\*/g,"").replace(/^\d+\.\s*/,"").split(".")[0];
+    const body = `**Accepted ${today()}: ${chosen}.**\n\n${why}`;
+
+    if(!LIVE){
+      await copy(`status: accepted\nupdated: ${today()}\n\n## Resolution\n${body}\n`, said,
+                 `Copied. Paste into ${d.path} and set the status.`);
+      return;
+    }
+    try {
+      said.textContent = "Writing…";
+      const r = await api("/api/decision/resolve",
+        {path: d.path, resolution: body, status: "accepted", date: today()});
+      showDiff(diffHost, r.diff);
+      d.status = "accepted"; d.resolution = body;
+      flash(`Resolved in ${r.path}. Re-run aeos check to refresh, then commit.`);
+      paintHud(); buildOrbs();
+    } catch(e){
+      showDiff(diffHost, "");
+      flash("Refused: " + e.message);
+    }
   });
 }
 
@@ -1134,52 +1252,108 @@ function wirePrompt(w, stageId){
   };
 }
 
+/* ─────────── write path ─────────── */
+/* When served by preview/serve.py, a note or resolution is written straight
+   into its record. Opened as a file there is no server, so the clipboard is
+   the fallback. The interface says which mode it is in rather than pretending
+   they are the same. */
+let LIVE = false;
+
+fetch("/api/ping", {cache:"no-store"})
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { LIVE = !!(d && d.ok); refreshSaveLines(); })
+  .catch(() => { LIVE = false; });
+
+function refreshSaveLines(){
+  document.querySelectorAll("[data-saveline]").forEach(el => {
+    el.classList.toggle("live", LIVE);
+    el.querySelector("[data-savetext]").textContent = LIVE
+      ? "Connected — saving writes directly to the record"
+      : "No server — saving copies to the clipboard instead";
+  });
+  document.querySelectorAll("[data-savebtn]").forEach(b => {
+    b.textContent = LIVE ? b.dataset.savebtn : "Copy for record";
+  });
+}
+
+async function api(route, payload){
+  const r = await fetch(route, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json().catch(() => ({ok:false, error:"bad response"}));
+  if(!d.ok) throw new Error(d.error || "write refused");
+  return d;
+}
+
+function showDiff(host, diff){
+  if(!host) return;
+  if(!diff){ host.innerHTML = ""; return; }
+  host.innerHTML = `<pre class="diff">` + diff.split("\n").slice(0,60).map(l => {
+    const c = l.startsWith("+") && !l.startsWith("+++") ? "a"
+            : l.startsWith("-") && !l.startsWith("---") ? "r" : "";
+    return c ? `<span class="${c}">${esc(l)}</span>` : esc(l);
+  }).join("\n") + `</pre>`;
+}
+
 /* ─────────── stage window ─────────── */
 function showStage(id){
   const s = STAGES[id];
   const skin = STAGE_SKIN[id] || FALLBACK_SKIN;
   const rec = (report.records||[]).find(r=>r.id===id);
   const isActive = id === activeStage;
+  const path = rec?.path || `docs/stages/${id}.md`;
   openStage = id;
 
   const w = makeWindow("stage:"+id, {
     id: id + (rec?.status ? " · " + rec.status : ""),
     title: NAMES[id] || id,
-    hue: skin.hue, width: 430, height: Math.min(640, innerHeight-140)
+    hue: skin.hue, width: 460, height: Math.min(620, innerHeight-140)
   });
 
-  let html = `<div class="blk" style="display:flex;align-items:center;gap:14px">
-      <canvas class="spGlyph" width="52" height="52" style="flex:none"></canvas>
-      <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
-    </div>`;
-
-  if(!s){
-    html += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
-  } else {
-    html += `<div class="blk"><h3>Purpose</h3><p>${esc(s.purpose)}</p></div>`;
-    if(s.principles?.length)
-      html += `<div class="blk"><h3>Principles</h3><ul>${s.principles.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ul></div>`;
-    if(s.protocol?.length)
-      html += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
-    if(s.gate?.length)
-      html += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-  }
-
-  // comments on the work at this stage
-  // decisions waiting at this gate
   const decs = DECISIONS[id] || [];
-  const openDecs = decs.filter(d => !SETTLED.has(d.status));
-  if(decs.length){
-    html += `<div class="blk"><h3>Decisions at this gate` +
-      (openDecs.length ? ` \u00b7 <span style="color:var(--amber)">${openDecs.length} awaiting a choice</span>` : " \u00b7 all settled") +
-      `</h3>` + decs.map(renderDecision).join("") + `</div>`;
-  }
+  const openN = decs.filter(d => !SETTLED.has(d.status)).length;
+  const rel = (report.findings||[]).filter(f =>
+    id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
 
-  // prompt composer
-  html += `<div class="blk"><h3>Compose a prompt for this stage</h3>
-      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 10px">
-        Your question, wrapped in this stage&rsquo;s protocol, exit gate, open decisions and current findings.
-        Nothing is sent anywhere \u2014 the brief is assembled here for you to paste wherever you want it answered.</p>
+  /* ── DECISIONS ── */
+  let decHtml = "";
+  if(decs.length){
+    decHtml += decs.map(renderDecision).join("");
+  } else {
+    decHtml += `<div class="blk"><p>No decisions are recorded against this gate.</p></div>`;
+  }
+  decHtml += `<div class="blk"><h3>Findings AEOS reports here</h3>` +
+    (rel.length
+      ? `<table>${rel.map(f=>`<tr><td class="k">${esc(f.severity)}</td><td>${esc(f.message)}</td></tr>`).join("")}</table>`
+      : `<p>None. AEOS has automated checks for the Security and Report gates only; the other six report unknown rather than passing.</p>`) +
+    `</div>`;
+
+  /* ── NOTES ── */
+  const notesHtml = `
+    <div class="blk">
+      <input class="cmt-t" data-title placeholder="Short title — what this is about">
+      <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
+      <div class="cmt-row">
+        <button class="btn primary" data-a="add" data-savebtn="Save to record">Save to record</button>
+        <button class="btn" data-a="clear">Discard drafts</button>
+      </div>
+      <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
+      <p class="said" data-said></p>
+      <div data-diff></div>
+      <div data-notes style="margin-top:16px"></div>
+    </div>
+    ${s?.memory?.length ? `<div class="blk"><h3>In the record · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
+      s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)}</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>` : ""}`;
+
+  /* ── ASK ── */
+  const askHtml = `
+    <div class="blk">
+      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 11px">
+        Your question, wrapped in this stage&rsquo;s purpose, principles, protocol, exit gate,
+        open decisions and current findings. Nothing is transmitted — the brief is assembled
+        here for you to take wherever you want it answered.</p>
       <textarea class="cmt" data-prompt placeholder="What do you want asked or done at this stage?"></textarea>
       <div class="cmt-row">
         <button class="btn primary" data-a="brief">Copy full brief</button>
@@ -1188,39 +1362,33 @@ function showStage(id){
       <p class="said" data-pmsg></p>
     </div>`;
 
-  html += `<div class="blk"><h3>Comments on this stage's work</h3>
-      <input class="cmt-t" data-title placeholder="Short title — what this is about">
-      <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
-      <div class="cmt-row">
-        <button class="btn primary" data-a="add">Add comment</button>
-        <button class="btn" data-a="export">Copy for record</button>
-        <button class="btn" data-a="clear">Discard all</button>
-      </div>
-      <p class="said" data-said></p>
-      <div data-notes style="margin-top:16px"></div>
-      <div class="note"><b>Closing this window loses nothing.</b>
-        Drafts, decision choices, half-written text and the window\u2019s own size and position
-        all return when you reopen it. Nothing here advances or halts the pipeline; the pipeline
-        moves when <code>aeos check</code> runs and when records change.</div>
-      <div class="note"><b>Drafts live in this browser only.</b>
-        They are not project state. AEOS records are the single home for notes —
-        use <em>Copy for record</em> and paste under <code>## Memory</code> in
-        <code>${esc(rec?.path || "the stage record")}</code>, then commit. Until then, nothing here is real.</div>
+  /* ── METHOD ── */
+  let methodHtml = `<div class="blk" style="display:flex;align-items:center;gap:14px">
+      <canvas class="spGlyph" width="52" height="52" style="flex:none"></canvas>
+      <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
     </div>`;
+  if(!s){
+    methodHtml += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
+  } else {
+    methodHtml += `<div class="blk"><h3>Purpose</h3><p>${esc(s.purpose)}</p></div>`;
+    if(s.principles?.length)
+      methodHtml += `<div class="blk"><h3>Principles</h3><ul>${s.principles.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ul></div>`;
+    if(s.protocol?.length)
+      methodHtml += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
+    if(s.gate?.length)
+      methodHtml += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  }
+  methodHtml += `<div class="blk"><h3>Record</h3><p><code>${esc(path)}</code></p>
+    <p style="margin-top:9px;font-size:12.5px;color:var(--marble-3)">Edit this file to change how the stage operates. The interface renders it; it is not the source.</p></div>`;
 
-  if(s?.memory?.length)
-    html += `<div class="blk"><h3>Recorded memory · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
-      s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)} · in record</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>`;
-
-  const rel = (report.findings||[]).filter(f =>
-    id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
-  html += `<div class="blk"><h3>Findings at this gate</h3>` +
-    (rel.length ? `<table>${rel.map(f=>`<tr><td class="k">${esc(f.severity)}</td><td>${esc(f.message)}</td></tr>`).join("")}</table>`
-                : `<p>None reported. AEOS surfaces findings for the Security and Report gates; the other six have no automated check yet, so their state is unknown rather than passing.</p>`) + `</div>`;
-
-  if(rec) html += `<div class="blk"><h3>Record</h3><p><code>${esc(rec.path)}</code></p></div>`;
-
-  w.body.innerHTML = html;
+  const defs = [
+    {id:"decisions", label:"Decisions", badge: openN || 0, html: decHtml},
+    {id:"notes",     label:"Notes",     html: notesHtml},
+    {id:"ask",       label:"Ask",       html: askHtml},
+    {id:"method",    label:"Method",    html: methodHtml}
+  ];
+  const pick = setTabs(w, "stage:"+id, defs);
+  if(openN && !store.get("tab.stage:"+id, null)) pick("decisions");
 
   const gc = w.el.querySelector(".spGlyph");
   if(gc && GLYPH[skin.glyph]){
@@ -1232,10 +1400,11 @@ function showStage(id){
     GLYPH[skin.glyph](c);
   }
 
-  wireComments(w, id);
+  wireComments(w, id, path);
   wireDecisions(w, id);
   wirePrompt(w, id);
-  if(openDecisionsFor(id).length) w.el.classList.add("needs");
+  refreshSaveLines();
+  if(openN) w.el.classList.add("needs");
 }
 
 /* ─────────── drop intake ─────────── */

@@ -123,6 +123,31 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
 
+/* ── tabs ── */
+.win-tabs{flex:none;display:flex;border-bottom:1px solid var(--edge-2);background:rgba(14,12,10,.55)}
+.win.collapsed .win-tabs{display:none}
+.tb{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--marble-3);
+  font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;
+  padding:11px 4px;cursor:pointer;position:relative;white-space:nowrap}
+.tb:hover{color:var(--marble-2)}
+.tb[aria-selected="true"]{color:var(--gilt-lit);border-bottom-color:var(--gilt)}
+.tb:focus-visible{outline:2px solid var(--gilt);outline-offset:-3px}
+.tb .n{display:inline-block;min-width:14px;padding:1px 4px;margin-left:5px;
+  border:1px solid var(--amber);color:var(--amber);font-size:8px;line-height:1.3}
+.pane{display:none}
+.pane.on{display:block}
+
+/* ── save state ── */
+.saveline{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;
+  font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--marble-3);margin:12px 0 0}
+.saveline .dotm{width:5px;height:5px;border-radius:50%;background:var(--marble-3);flex:none}
+.saveline.live .dotm{background:var(--moss);box-shadow:0 0 6px rgba(126,144,104,.8)}
+.saveline.live{color:var(--moss)}
+pre.diff{background:rgba(0,0,0,.4);border:1px solid var(--edge);padding:11px 13px;margin:12px 0 0;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;line-height:1.6;color:var(--marble-3);
+  max-height:190px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+pre.diff .a{color:var(--moss)} pre.diff .r{color:var(--oxide)}
+
 /* ── decisions ── */
 .dec{border:1px solid var(--edge);border-left:3px solid var(--amber);padding:14px 16px;margin:0 0 13px}
 .dec.settled{border-left-color:var(--moss);opacity:.72}
@@ -256,9 +281,9 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
 <div id="windows"></div>
 
 <script>
-const REPORT = {"schema_version":"0.3","project":{"id":"AEOS-CLI","name":"aeos-cli","level":"B","security_level":"S2"},"pipeline":{"current_stage":"STAGE-03-BUILD"},"manifest_path":"aeos.yaml","summary":{"records_discovered":32,"info":4,"warnings":0,"errors":0,"critical":0},"records":[{"type":"ADR","id":"ADR-001","status":"accepted","path":"docs/adr/ADR-001-go-cli.md"},{"type":"ADR","id":"ADR-002","status":"accepted","path":"docs/adr/ADR-002-m1-manifest-parser.md"},{"type":"ADR","id":"ADR-003","status":"accepted","path":"docs/adr/ADR-003-secret-scanner.md"},{"type":"ADR","id":"ADR-004","status":"accepted","path":"docs/adr/ADR-004-pipeline-stages.md"},{"type":"AUDIT","id":"AUDIT-001","status":"completed","path":"docs/audits/AUDIT-001-pre-publish.md"},{"type":"DECISION","id":"DEC-001","status":"open","path":"docs/decisions/DEC-001.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"DECISION","id":"DEC-002","status":"open","path":"docs/decisions/DEC-002.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"DECISION","id":"DEC-003","status":"open","path":"docs/decisions/DEC-003.md","references":["ADR-004","STAGE-03-BUILD"]},{"type":"DECISION","id":"DEC-004","status":"open","path":"docs/decisions/DEC-004.md","references":["ADR-003","STAGE-05-SECURITY"]},{"type":"DECISION","id":"DEC-005","status":"accepted","path":"docs/decisions/DEC-005.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"PROJECT","id":"AEOS-CLI","status":"development","path":"PROJECT.md"},{"type":"REQ","id":"REQ-CLI-001","status":"accepted","path":"docs/requirements/REQ-CLI-001-load-project-manifest.md"},{"type":"REQ","id":"REQ-CLI-002","status":"accepted","path":"docs/requirements/REQ-CLI-002-discover-aeos-records.md"},{"type":"REQ","id":"REQ-CLI-003","status":"accepted","path":"docs/requirements/REQ-CLI-003-validate-unique-ids.md"},{"type":"REQ","id":"REQ-CLI-004","status":"accepted","path":"docs/requirements/REQ-CLI-004-validate-references.md"},{"type":"REQ","id":"REQ-CLI-005","status":"accepted","path":"docs/requirements/REQ-CLI-005-validate-required-project-files.md"},{"type":"REQ","id":"REQ-CLI-006","status":"accepted","path":"docs/requirements/REQ-CLI-006-status-staleness.md"},{"type":"REQ","id":"REQ-CLI-007","status":"implemented","path":"docs/requirements/REQ-CLI-007-console-reporter.md"},{"type":"REQ","id":"REQ-CLI-008","status":"implemented","path":"docs/requirements/REQ-CLI-008-json-reporter.md"},{"type":"REQ","id":"REQ-CLI-009","status":"implemented","path":"docs/requirements/REQ-CLI-009-exit-codes.md"},{"type":"REQ","id":"REQ-CLI-010","status":"implemented","path":"docs/requirements/REQ-CLI-010-record-discovery.md"},{"type":"REQ","id":"REQ-CLI-011","status":"implemented","path":"docs/requirements/REQ-CLI-011-integrity-validation.md"},{"type":"REQ","id":"REQ-CLI-012","status":"implemented","path":"docs/requirements/REQ-CLI-012-secret-scanning.md","references":["ADR-003"]},{"type":"STAGE","id":"STAGE-01-INTAKE","status":"active","path":"docs/stages/STAGE-01-INTAKE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-02-DESIGN","status":"active","path":"docs/stages/STAGE-02-DESIGN.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-03-BUILD","status":"active","path":"docs/stages/STAGE-03-BUILD.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-04-QA","status":"active","path":"docs/stages/STAGE-04-QA.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-05-SECURITY","status":"active","path":"docs/stages/STAGE-05-SECURITY.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-06-COMPLIANCE","status":"active","path":"docs/stages/STAGE-06-COMPLIANCE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-07-RELEASE","status":"active","path":"docs/stages/STAGE-07-RELEASE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-08-REPORT","status":"active","path":"docs/stages/STAGE-08-REPORT.md","references":["ADR-004"]},{"type":"STATUS","id":"STATUS","path":"STATUS.md"}],"findings":[{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-001 is unresolved (status \"open\")","paths":["docs/decisions/DEC-001.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false},{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-002 is unresolved (status \"open\")","paths":["docs/decisions/DEC-002.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false},{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-003 is unresolved (status \"open\")","paths":["docs/decisions/DEC-003.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false},{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-004 is unresolved (status \"open\")","paths":["docs/decisions/DEC-004.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false}],"result":"PASS"};
+const REPORT = {"schema_version":"0.3","project":{"id":"AEOS-CLI","name":"aeos-cli","level":"B","security_level":"S2"},"pipeline":{"current_stage":"STAGE-03-BUILD"},"manifest_path":"aeos.yaml","summary":{"records_discovered":32,"info":3,"warnings":0,"errors":0,"critical":0},"records":[{"type":"ADR","id":"ADR-001","status":"accepted","path":"docs/adr/ADR-001-go-cli.md"},{"type":"ADR","id":"ADR-002","status":"accepted","path":"docs/adr/ADR-002-m1-manifest-parser.md"},{"type":"ADR","id":"ADR-003","status":"accepted","path":"docs/adr/ADR-003-secret-scanner.md"},{"type":"ADR","id":"ADR-004","status":"accepted","path":"docs/adr/ADR-004-pipeline-stages.md"},{"type":"AUDIT","id":"AUDIT-001","status":"completed","path":"docs/audits/AUDIT-001-pre-publish.md"},{"type":"DECISION","id":"DEC-001","status":"accepted","path":"docs/decisions/DEC-001.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"DECISION","id":"DEC-002","status":"open","path":"docs/decisions/DEC-002.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"DECISION","id":"DEC-003","status":"open","path":"docs/decisions/DEC-003.md","references":["ADR-004","STAGE-03-BUILD"]},{"type":"DECISION","id":"DEC-004","status":"open","path":"docs/decisions/DEC-004.md","references":["ADR-003","STAGE-05-SECURITY"]},{"type":"DECISION","id":"DEC-005","status":"accepted","path":"docs/decisions/DEC-005.md","references":["ADR-004","STAGE-02-DESIGN"]},{"type":"PROJECT","id":"AEOS-CLI","status":"development","path":"PROJECT.md"},{"type":"REQ","id":"REQ-CLI-001","status":"accepted","path":"docs/requirements/REQ-CLI-001-load-project-manifest.md"},{"type":"REQ","id":"REQ-CLI-002","status":"accepted","path":"docs/requirements/REQ-CLI-002-discover-aeos-records.md"},{"type":"REQ","id":"REQ-CLI-003","status":"accepted","path":"docs/requirements/REQ-CLI-003-validate-unique-ids.md"},{"type":"REQ","id":"REQ-CLI-004","status":"accepted","path":"docs/requirements/REQ-CLI-004-validate-references.md"},{"type":"REQ","id":"REQ-CLI-005","status":"accepted","path":"docs/requirements/REQ-CLI-005-validate-required-project-files.md"},{"type":"REQ","id":"REQ-CLI-006","status":"accepted","path":"docs/requirements/REQ-CLI-006-status-staleness.md"},{"type":"REQ","id":"REQ-CLI-007","status":"implemented","path":"docs/requirements/REQ-CLI-007-console-reporter.md"},{"type":"REQ","id":"REQ-CLI-008","status":"implemented","path":"docs/requirements/REQ-CLI-008-json-reporter.md"},{"type":"REQ","id":"REQ-CLI-009","status":"implemented","path":"docs/requirements/REQ-CLI-009-exit-codes.md"},{"type":"REQ","id":"REQ-CLI-010","status":"implemented","path":"docs/requirements/REQ-CLI-010-record-discovery.md"},{"type":"REQ","id":"REQ-CLI-011","status":"implemented","path":"docs/requirements/REQ-CLI-011-integrity-validation.md"},{"type":"REQ","id":"REQ-CLI-012","status":"implemented","path":"docs/requirements/REQ-CLI-012-secret-scanning.md","references":["ADR-003"]},{"type":"STAGE","id":"STAGE-01-INTAKE","status":"active","path":"docs/stages/STAGE-01-INTAKE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-02-DESIGN","status":"active","path":"docs/stages/STAGE-02-DESIGN.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-03-BUILD","status":"active","path":"docs/stages/STAGE-03-BUILD.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-04-QA","status":"active","path":"docs/stages/STAGE-04-QA.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-05-SECURITY","status":"active","path":"docs/stages/STAGE-05-SECURITY.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-06-COMPLIANCE","status":"active","path":"docs/stages/STAGE-06-COMPLIANCE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-07-RELEASE","status":"active","path":"docs/stages/STAGE-07-RELEASE.md","references":["ADR-004"]},{"type":"STAGE","id":"STAGE-08-REPORT","status":"active","path":"docs/stages/STAGE-08-REPORT.md","references":["ADR-004"]},{"type":"STATUS","id":"STATUS","path":"STATUS.md"}],"findings":[{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-002 is unresolved (status \"open\")","paths":["docs/decisions/DEC-002.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false},{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-003 is unresolved (status \"open\")","paths":["docs/decisions/DEC-003.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false},{"rule":"AEOS-DEC-001","severity":"INFO","confidence":"verified","message":"decision DEC-004 is unresolved (status \"open\")","paths":["docs/decisions/DEC-004.md"],"recommended_action":"record a resolution, or set the status to rejected or withdrawn if it is no longer live","blocking":false}],"result":"PASS"};
 const STAGES = {"STAGE-01-INTAKE":{"purpose":"Capture what is actually being asked before anything is designed or built. Intake exists to prevent the most expensive class of failure: building the wrong thing correctly.","principles":["1. Ambiguity is a finding, not an inconvenience. An unclear request is recorded as unclear rather than resolved by assumption.","2. The requester's words are evidence. Restating a request in more convenient terms is how scope quietly changes owner.","3. Nothing enters the pipeline unclassified. A change with no level, no security level and no owner cannot be gated later.","4. Say no early. Rejecting work at Intake costs a conversation; rejecting it at Release costs a rollback."],"protocol":["1. Record the request verbatim, with its source and date.","2. Identify what is being asked for and what is being assumed.","3. Classify: change type, project level, security level, data classification.","4. Name the smallest outcome that would satisfy the request.","5. List what is unknown. Do not fill gaps with plausible guesses.","6. Check the request against `ROADMAP.md` priority rules and the Branch Gate.","7. Accept, defer to backlog, or reject \u2014 and record which, with the reason."],"gate":["The request is recorded with its original wording.","Classification is complete: type, level, security level, data class.","Unknowns are listed explicitly rather than resolved by assumption.","A disposition is recorded: accepted, deferred, or rejected, with reasoning.","If accepted, the request answers at least one Branch Gate question in `ROADMAP.md`."],"memory":[{"date":"2026-08-26","title":"Ambiguity resolved silently is ambiguity twice","body":"A repository identity conflict (`baa-211/Aeos-` versus module `github.com/baa-211/aeos-cli`) went unresolved across several sessions because each session treated it as a detail rather than an Intake decision. It was finally settled by explicit choice: keep the repository, migrate the module. The cost of deciding late was a codebase-wide edit across seventeen files. Deciding at Intake would have cost one settings change."},{"date":"2026-08-26","title":"A request for a feature is not a request for its architecture","body":"An account system was requested as \"a login screen with email and password.\" Taken literally that implies hosted accounts, a database and a credential store \u2014 all forbidden by `PROJECT.md` non-goals. The underlying need was persistence, not authentication. Intake's job is to surface that gap before Design commits to the literal reading."}]},"STAGE-02-DESIGN":{"purpose":"Decide how the accepted request will be met, and record the reasoning so the decision survives the person who made it. Design absorbs what earlier vocabularies called Understand, Classify, Plan and Structure.","principles":["1. Prefer the minimum trustworthy complexity the problem actually requires.","2. Record rejected alternatives. A decision without its discarded options cannot be re-evaluated later.","3. Do not create a parallel source of truth. Every consumer reads the same records.","4. Dependencies are decisions. Adding one is never incidental.","5. Reversibility is a design property. State what it would cost to undo this."],"protocol":["1. Read the existing implementation before proposing changes to it.","2. State the problem in terms of observable behavior, not desired code.","3. Enumerate at least two viable approaches.","4. Choose one and write down why the others were rejected.","5. Identify the security and data implications before implementation, not after.","6. Record the decision as an ADR when it constrains future work.","7. Define what evidence will prove the design correct."],"gate":["The chosen approach is recorded, with rejected alternatives and reasons.","Security and data implications are stated.","Reversal cost is stated.","New dependencies are named and justified, or confirmed as none.","The evidence that would prove the design correct is defined in advance."],"memory":[{"date":"2026-08-26","title":"Design the escape hatch before it is needed","body":"Module path migration was chosen over repository rename. The accepted consequence \u2014 Go case-encoding the path as `github.com/baa-211/!aeos-` \u2014 was recorded at decision time rather than discovered later. Reversal cost was also recorded: cheap before first publish, expensive after any consumer runs `go get`. That framing made the decision straightforward."},{"date":"2026-08-26","title":"Sequencing is a design decision","body":"Building authentication before a product surface existed would have committed the project permanently to password reset, recovery and migration obligations for state that did not yet exist. The design held was a local vault sealed with XChaCha20-Poly1305, whose sealing material is derived from the passphrase using Argon2id, with email as a label rather than a credential and no server. Deferring it was the design, not an absence of one."}]},"STAGE-03-BUILD":{"purpose":"Implement the accepted design in the smallest reviewable increments that keep the system working.","principles":["1. Small reviewable changes over large correct ones. A change nobody can review is not trustworthy regardless of its quality.","2. Do not silently add dependencies.","3. Configuration is data, never executable code.","4. AI-generated code is not trusted until reviewed and tested.","5. Leave the build green. A broken main branch blocks everyone."],"protocol":["1. Inspect the code being changed before editing it.","2. Implement the smallest increment that is independently verifiable.","3. Keep formatting mechanical: `gofmt` decides, not preference.","4. Run build and vet continuously, not once at the end.","5. Write the comment that explains why, where the reason is not evident from the code.","6. Update affected records in the same change, not a follow-up."],"gate":["`gofmt` reports no files needing formatting.","`go build ./...` succeeds.","`go vet ./...` is clean.","No new dependency was added without a recorded decision.","Affected AEOS records were updated in the same change."],"memory":[{"date":"2026-08-26","title":"Normalize at the adapter boundary, not at the point of use","body":"Two scan modes reported paths in incompatible forms. The fix belonged in the secrets adapter, where external output first enters the system, rather than in the reporting layer where the symptom appeared. Normalizing at the boundary meant one change fixed both the duplicate-findings defect and the report determinism defect. Correcting at the symptom would have fixed one and hidden the other."}]},"STAGE-04-QA":{"purpose":"Prove the change behaves as designed, and prove the system still behaves as it did. QA absorbs what earlier vocabularies called Verify and Review.","principles":["1. Every validator defect adds a regression test. A fix without one is a fix that will be undone.","2. A test that cannot fail proves nothing. Verify the negative case.","3. Determinism is testable. Assert it rather than assuming it.","4. Coverage is a signal, not a goal. High coverage of trivial paths is not assurance.","5. Reproduce before fixing. A defect you cannot demonstrate is a defect you cannot confirm you fixed."],"protocol":["1. Reproduce the defect or demonstrate the new behavior before changing code.","2. Write the failing test first where practical.","3. Verify the test fails without the fix and passes with it.","4. Run the full suite uncached, not only the affected package.","5. Test the boundary cases: empty, absent, malformed, outside expected range.","6. Confirm the negative control \u2014 that a clean input still passes."],"gate":["`go test ./...` passes uncached across all packages.","Each defect fixed in this change has a regression test that fails without the fix.","Boundary and negative cases are covered.","A clean control case still passes, confirming the test can distinguish states."],"memory":[{"date":"2026-08-26","title":"Verify the fixture before trusting the result","body":"A planted-secret test initially reported no findings, which looked like a scanner failure. The planted values were the AWS documentation example keys, which Gitleaks correctly allowlists. The tool was right and the test was wrong. Re-testing with realistically shaped credentials confirmed detection. A test fixture that is itself invalid produces a false defect report, which costs as much trust as a false pass."},{"date":"2026-08-26","title":"Assert determinism directly","body":"Report determinism was proven by checking the same project from two different filesystem locations and comparing SHA-256 digests of the output. Byte-identical output is a testable property; \"should be deterministic\" is not."}]},"STAGE-05-SECURITY":{"purpose":"Establish that the change does not create, hide, or weaken a security property. Security is a gate a change must pass, not a quality it is assumed to have.","principles":["1. **No false green.** Reporting PASS when the system does not know is the worst possible failure. Unknown is reported as unknown.","2. Repository content is untrusted data. Repository-controlled commands are never automatically executed.","3. Silence is not safety. A silently ignored setting is a hazard, not a convenience.","4. Prove blocking, not merely detection. A scanner that fires while the tool ignores it is indistinguishable from a clean run.","5. Secrets are never printed, logged, or written to a report, including while reporting them.","6. Pin external security tooling to an exact version and verify its checksum before trusting it."],"protocol":["1. Identify what the change could cause the system to stop noticing.","2. Scan for secrets in both working content and version history before publishing anything.","3. Confirm findings are redacted by searching output for the raw values.","4. Confirm the tool blocks: assert the failing exit code, not just the presence of a finding.","5. Confirm the absent-tool path fails closed rather than passing.","6. Verify external tool version and checksum against the pin."],"gate":["Secret scan is clean across working tree and history, or every finding is triaged and recorded.","No raw secret appears in console output, JSON report, or logs.","The blocking path is proven by exit code, not inferred from a finding count.","Missing or unverifiable security tooling produces a blocking error, never a pass.","External security tooling matches its exact pin by checksum."],"memory":[{"date":"2026-08-26","title":"A typo silently disabled the security gate","body":"Misspelling the manifest key `security` as `securty` caused the section to be silently ignored. Secret scanning was disabled and AEOS reported PASS with exit code 0 while a live private key sat in the directory. This was a false green inside the tool built to prevent false greens, and it failed open: the path defect found the same day over-counted findings, which errs safe, while this one under-reported to zero. Fixed by rejecting unknown top-level manifest sections outright, with a suggestion for near-misses. The general lesson: for a security tool, permissive parsing of its own configuration is a vulnerability."},{"date":"2026-08-26","title":"Prove blocking, not detection","body":"The original CI step proved Gitleaks detects a secret. It never proved AEOS acts on one. A regression where the scanner worked but AEOS dropped the finding would have produced a green build. The workflow now asserts exit code 3 and the presence of `AEOS-SEC-001` against a key generated at runtime."},{"date":"2026-08-26","title":"A credential shared is a credential burned","body":"A GitHub token was transmitted in plaintext through a chat interface. Regardless of intent, copies then existed in locations neither party controlled. The only effective response to credential exposure is revocation; retrieval is not possible."},{"date":"2026-08-26","title":"AEOS blocked on its own documentation, correctly","body":"The first `aeos check` run after adding the stage records failed with a CRITICAL finding: Gitleaks' `generic-api-key` rule matched a design memory entry where a cipher name appeared directly after the word `key`, reading the algorithm identifier as a high-entropy secret. The offending phrase is deliberately not reproduced here, because quoting it reproduces the finding. A genuine false positive, and the tool behaved correctly by refusing to pass. Resolved by rewording the prose rather than adding a scanner allowlist. An allowlist would have silenced this finding and every future one matching the same rule, which is the mechanism by which real secrets eventually go unreported. Prose is cheap to change; a weakened detection rule is permanent and invisible. Discovered during M6 dogfooding. Writing about cryptography in project documentation reliably trips secret scanners, and that friction is worth absorbing rather than configuring away."}]},"STAGE-06-COMPLIANCE":{"purpose":"Establish that the change is lawful to distribute and usable by people who do not interact the way its authors do. This stage absorbs what an earlier vocabulary called Approve.","principles":["1. Unlicensed is not permissive. Code published without a license grants nobody any rights.","2. Accessibility is a correctness property, not a polish task. An interface unusable by keyboard is broken, not unrefined.","3. Colour never carries meaning alone.","4. State must be honest in every mode. A status that reads OPTIMAL when the truth is UNKNOWN fails here as surely as in Security.","5. Attribution obligations of dependencies are inherited, not optional."],"protocol":["1. Confirm a license file exists and matches the intended terms.","2. Review dependency licenses for compatibility and attribution obligations.","3. For any interface: verify full keyboard operability and visible focus.","4. Verify contrast meets WCAG 2.2 AA and that no state is signalled by colour alone.","5. Verify semantic structure: labels bound to controls, live regions for dynamic messages, correct heading order.","6. Verify reduced-motion preferences are respected.","7. Confirm no personal data is collected or transmitted without an explicit recorded decision."],"gate":["A license file is present and correct; dependency licenses are compatible.","Every interactive element is reachable and operable by keyboard with visible focus.","Contrast meets WCAG 2.2 AA; no meaning depends on colour alone.","Dynamic status changes are announced to assistive technology.","Reduced-motion preferences are honoured.","Data handling matches the declared classification."],"memory":[{"date":"2026-08-26","title":"Published without a license for one commit","body":"The repository was made public before a license file existed, which meant that for a short window nobody could legally use, fork or contribute to it. Caught during pre-publish review and corrected with MIT before the first push. License presence belongs on the publish checklist, not in a follow-up commit."},{"date":"2026-08-26","title":"A green status badge is an accessibility and honesty failure at once","body":"The visual direction placed a single `OPTIMAL` indicator in the interface. It communicates state by colour alone, and it collapses unknown and healthy into the same signal. The prototype replaced it with explicit textual states: `VAULT LOCKED`, `SESSION NONE`, `LAST CHECK UNKNOWN`."}]},"STAGE-07-RELEASE":{"purpose":"Make the change available, only when evidence justifies it.","principles":["1. Evidence precedes release. A milestone closes on a reproducible result, not on a local one.","2. A milestone is not complete because it is implemented.","3. Publication is one-way. Anything public should be assumed permanent.","4. Version numbers are claims. They should be defensible.","5. Prefer a release that admits what is missing over one that implies completeness.","6. One version, one source. `project.version` in the manifest is authoritative; every versioned record must agree, and `AEOS-VER-001` enforces it.","7. `main` is always the latest verified state. Tags are applied to commits that already passed CI, never in anticipation.","8. A diverged branch is ambiguity about which version is current. Merge it or delete it; never leave it."],"protocol":["1. Confirm all prior stage gates passed.","2. Run the full verification suite in a clean environment, not only locally.","3. Scan for secrets one final time against the exact tree being published.","4. Confirm continuous integration passes on the published artifact, not a local copy.","5. Record what is deliberately absent from this release.","6. Update version and status records to reflect the evidence, not the intent."],"gate":["Every prior stage gate is passed and recorded.","CI passes on the published repository.","Final secret scan of the published tree is clean.","Known gaps and deliberate omissions are recorded in the release notes.","Version and status records match the evidence rather than the plan.","`AEOS-VER-001` is clean: no record disagrees with the manifest version.","A `CHANGELOG.md` entry exists for the version.","The commit is tagged, and the tag, `main`, and `aeos.yaml` all agree.","No branch remains diverged from `main` without a recorded reason."],"memory":[{"date":"2026-08-26","title":"Publish what you have, state what you do not","body":"The publishing token lacked `workflow` scope, so `.github/workflows/ci.yml` could not be pushed with the initial commit. Rather than presenting the repository as complete, the omission was written into the commit message and M5 was held open until the workflow was added separately and passed. A release that admits a gap is more trustworthy than one that hides it."},{"date":"2026-08-26","title":"Local evidence is not CI evidence","body":"End-to-end verification against real Gitleaks 8.30.0 passed locally well before M5 closed. That result rested on one machine and one operator's honesty, and nobody could reproduce it. M5 closed only when GitHub Actions run #4 passed all fourteen steps independently."},{"date":"2026-08-31","title":"Three versions, no tags, nothing watching","body":"`aeos.yaml`, `PROJECT.md` and `STATUS.md` simultaneously declared 0.0.1, 0.0.7 and 0.1.1-rc. There were no Git tags and no changelog, so \"the latest version\" had no answer. Each file had been edited by a different session with a different idea of what the project had reached. Resolved by making the manifest authoritative and adding `AEOS-VER-001`, which blocks when any record disagrees with it. Version drift can no longer reach `main`. The general lesson: duplicated state without a mechanism keeping it aligned will diverge, and the mechanism has to be automatic \u2014 noticing by eye is what failed here for eleven days."}]},"STAGE-08-REPORT":{"purpose":"Record what actually happened and why, so the reasoning outlives the session that produced it. This stage absorbs what earlier vocabularies called Observe, Learn, Record and Guide.","principles":["1. Preserve reasoning, not only outcomes. A decision without its rationale becomes folklore.","2. Records must age honestly. A document claiming a superseded state is worse than no document.","3. Report unknowns as unknowns. Never hide UNKNOWN, STALE or BLOCKED behind a score.","4. Documentation drift is a defect with a severity, not untidiness.","5. Write the negative result. Approaches that failed are as instructive as ones that worked."],"protocol":["1. Record what changed, why, and what evidence supports it.","2. Note which founding principle, if any, was strained.","3. Update every record the change invalidated \u2014 in the same change.","4. Append dated memory entries to the stages this work passed through.","5. State the known unknowns explicitly.","6. Name the next smallest high-value step."],"gate":["Change is recorded with reasoning and supporting evidence.","Every record invalidated by the change has been updated.","Strained principles are named.","Known unknowns are stated rather than omitted.","The next step is recorded."],"memory":[{"date":"2026-08-26","title":"Eleven days of undetected drift, found by accident","body":"`README.md` and `PROJECT.md` both claimed milestone M1 while the project had reached M5. Four completed milestones went unreflected. AEOS validated its own integrity throughout and did not notice, because `REQ-CLI-006` staleness detection is accepted but unimplemented. The tool built to catch documentation drift failed to catch its own \u2014 which is the strongest available argument for building the requirement, and the reason it leads M6."},{"date":"2026-08-26","title":"Four vocabularies for one pipeline","body":"Seven conceptual phases, eleven professional stages, eight rendered globes and eight delivery stages all described the same process differently. Each was created in a separate session and none referenced the others. Reconciled in `ADR-004`. The general lesson: a naming decision made without reading the previous naming decision produces a fourth truth rather than a corrected one."}]}};
-const DECISIONS = {"STAGE-02-DESIGN":[{"id":"DEC-001","title":"How Comments Reach the Record","status":"open","priority":"high","question":"Should the preview be able to write a drafted comment into a stage record, or must it stay clipboard-only?","why":"Comments drafted in the command interface are exported as Markdown for manual pasting. That keeps the preview strictly read-only, which the handoff requires, but it puts a copy-and-paste step between a thought and the record that is meant to hold it. Friction here means notes do not get written.","options":["1. **Clipboard only (current).** Zero write surface. The preview cannot corrupt a record. Cost: every note needs manual pasting and committing.","2. **Local write endpoint with diff preview.** A small local server appends to the stage record and shows the diff for approval before it is applied. Cost: the preview gains a write path, and the handoff rule about not mutating files without explicit confirmation becomes a runtime guarantee rather than a structural one.","3. **Emit a patch file.** The preview writes a `.patch` to a scratch directory; the person applies it with `git apply`. Cost: still two steps, but no direct mutation of records."],"blocks":"Nothing today. It becomes urgent if comment volume grows enough that pasting is skipped.","resolution":"Unresolved. Option 3 preserves the read-only property while removing the clipboard, and is the current preference pending a decision.","path":"docs/decisions/DEC-001.md"},{"id":"DEC-002","title":"Shape of Freshness Configuration for REQ-CLI-006","status":"open","priority":"high","question":"Where is the staleness threshold declared, and is it one value or per record type?","why":"`REQ-CLI-006` is the last M6 blocker and cannot be implemented until freshness is configurable. Stage gate enforcement depends on the same mechanism, so this decision unblocks two things.","options":["1. **Single threshold in the manifest.** `freshness: max_age_days: 30`. Simple, one value, easy to reason about. Cost: a STATUS record and an ADR age at very different rates; one number will be wrong for one of them.","2. **Per record type.** `freshness: STATUS: 7, REQ: 90, ADR: 0`. Accurate. Cost: more manifest surface, and the narrow parser grows.","3. **Per record override in frontmatter.** Each record declares its own tolerance. Most accurate, most scattered, and easiest to abuse by setting a long tolerance on the record that most needs watching."],"blocks":"M6 completion, and stage gate enforcement behind it.","resolution":"Unresolved.","path":"docs/decisions/DEC-002.md"},{"id":"DEC-005","title":"Sequencing of the Account System","status":"accepted","priority":"high","question":"Should authentication be built before the product surface exists?","why":"A login screen was requested early. Accounts are a permanent commitment: password reset, recovery, migration and a credential store become obligations the moment they ship.","options":["1. **Local vault.** Passphrase derives sealing material; state is encrypted at rest. No server, no reset flow, no breach surface. Email is a label, not a credential.","2. **OS keychain, no passphrase.** Zero friction, weakest if the machine is unlocked.","3. **Hosted accounts.** The only option enabling multi-device sync, and the only one that contradicts the v0.1 rule against a database or cloud dependency in the core."],"blocks":"Nothing. Deferred behind a proven CLI surface.","resolution":"**Accepted 2026-08-31: option 1, deferred until the preview proves what state needs protecting.** A login screen gates nothing while AEOS is a CLI. The design is held: Argon2id-derived sealing material, XChaCha20-Poly1305, email as a label. Revisit when the preview holds state worth protecting.","path":"docs/decisions/DEC-005.md"}],"STAGE-03-BUILD":[{"id":"DEC-003","title":"Source of the CLI Version String","status":"open","priority":"medium","question":"Where does `aeos --version` read its value from?","why":"The binary cannot currently report what it is. The manifest is authoritative for the project version, but a binary can be run against any project, so reading the target's manifest would report the wrong thing.","options":["1. **Build-time ldflags.** `-X main.version=...` set from the tag during release. Standard Go practice. Cost: a `go build` without the flag reports an empty or `dev` version.","2. **Embedded constant synchronized by AEOS-VER-001.** The constant joins the set of versions the validator keeps aligned. Cost: another place the version lives, though it would be enforced rather than trusted.","3. **`debug.ReadBuildInfo` from the module version.** No flags needed. Cost: reports `(devel)` for local builds, which is honest but unhelpful during development."],"blocks":"Nothing. Recorded as an open M6 gap in STATUS.","resolution":"Unresolved.","path":"docs/decisions/DEC-003.md"}],"STAGE-05-SECURITY":[{"id":"DEC-004","title":"Policy for Gitleaks False Positives in Documentation","status":"open","priority":"medium","question":"When project documentation legitimately trips a scanner rule, is the response always to reword?","why":"Writing about cryptography reliably trips `generic-api-key`. This has happened twice, both in documentation about the scanner itself. Rewording worked, but it constrains what the project can write about its own security.","options":["1. **Always reword (current).** No allowlist ever. Cost: some accurate technical prose cannot be written.","2. **Path-scoped allowlist for `docs/` only.** Source and configuration stay fully scanned. Cost: documentation becomes a place where a real secret could hide.","3. **Rule-scoped allowlist for `generic-api-key` in `docs/` only.** Narrowest option. Cost: still a hole, and the highest-recall rule is the one being narrowed."],"blocks":"Nothing yet. Each recurrence costs a rewrite.","resolution":"Unresolved. Option 1 stands until the cost of rewording exceeds the cost of a scoped hole.","path":"docs/decisions/DEC-004.md"}]};
+const DECISIONS = {"STAGE-02-DESIGN":[{"id":"DEC-001","title":"How Comments Reach the Record","status":"accepted","priority":"high","question":"Should the preview be able to write a drafted comment into a stage record, or must it stay clipboard-only?","why":"Comments drafted in the command interface are exported as Markdown for manual pasting. That keeps the preview strictly read-only, which the handoff requires, but it puts a copy-and-paste step between a thought and the record that is meant to hold it. Friction here means notes do not get written.","options":["1. **Clipboard only (current).** Zero write surface. The preview cannot corrupt a record. Cost: every note needs manual pasting and committing.","2. **Local write endpoint with diff preview.** A small local server appends to the stage record and shows the diff for approval before it is applied. Cost: the preview gains a write path, and the handoff rule about not mutating files without explicit confirmation becomes a runtime guarantee rather than a structural one.","3. **Emit a patch file.** The preview writes a `.patch` to a scratch directory; the person applies it with `git apply`. Cost: still two steps, but no direct mutation of records."],"blocks":"Nothing today. It becomes urgent if comment volume grows enough that pasting is skipped.","resolution":"**Accepted 2026-09-01: option 2, a local write endpoint with diff preview.**\n\nThe project owner rejected the clipboard flow directly: a step between writing a thought and the record holding it means the thought does not get recorded. Option 3, emitting a patch file, was also rejected as still two steps.\n\nThe read-only property is preserved by constraint rather than by absence. `preview/serve.py` binds to the loopback interface only, writes exclusively to Markdown records that already exist under `docs/`, cannot create or delete files, cannot follow symlinks, and appends under a named heading rather than rewriting a file. Git is never touched implicitly; staging and committing are separate calls a person makes, and the diff is returned first. The validator is never invoked from the server, so the interface can never appear to certify its own edits.\n\nOpened as a file with no server running, the interface falls back to the clipboard and says which mode it is in.","path":"docs/decisions/DEC-001.md"},{"id":"DEC-002","title":"Shape of Freshness Configuration for REQ-CLI-006","status":"open","priority":"high","question":"Where is the staleness threshold declared, and is it one value or per record type?","why":"`REQ-CLI-006` is the last M6 blocker and cannot be implemented until freshness is configurable. Stage gate enforcement depends on the same mechanism, so this decision unblocks two things.","options":["1. **Single threshold in the manifest.** `freshness: max_age_days: 30`. Simple, one value, easy to reason about. Cost: a STATUS record and an ADR age at very different rates; one number will be wrong for one of them.","2. **Per record type.** `freshness: STATUS: 7, REQ: 90, ADR: 0`. Accurate. Cost: more manifest surface, and the narrow parser grows.","3. **Per record override in frontmatter.** Each record declares its own tolerance. Most accurate, most scattered, and easiest to abuse by setting a long tolerance on the record that most needs watching."],"blocks":"M6 completion, and stage gate enforcement behind it.","resolution":"Unresolved.","path":"docs/decisions/DEC-002.md"},{"id":"DEC-005","title":"Sequencing of the Account System","status":"accepted","priority":"high","question":"Should authentication be built before the product surface exists?","why":"A login screen was requested early. Accounts are a permanent commitment: password reset, recovery, migration and a credential store become obligations the moment they ship.","options":["1. **Local vault.** Passphrase derives sealing material; state is encrypted at rest. No server, no reset flow, no breach surface. Email is a label, not a credential.","2. **OS keychain, no passphrase.** Zero friction, weakest if the machine is unlocked.","3. **Hosted accounts.** The only option enabling multi-device sync, and the only one that contradicts the v0.1 rule against a database or cloud dependency in the core."],"blocks":"Nothing. Deferred behind a proven CLI surface.","resolution":"**Accepted 2026-08-31: option 1, deferred until the preview proves what state needs protecting.** A login screen gates nothing while AEOS is a CLI. The design is held: Argon2id-derived sealing material, XChaCha20-Poly1305, email as a label. Revisit when the preview holds state worth protecting.","path":"docs/decisions/DEC-005.md"}],"STAGE-03-BUILD":[{"id":"DEC-003","title":"Source of the CLI Version String","status":"open","priority":"medium","question":"Where does `aeos --version` read its value from?","why":"The binary cannot currently report what it is. The manifest is authoritative for the project version, but a binary can be run against any project, so reading the target's manifest would report the wrong thing.","options":["1. **Build-time ldflags.** `-X main.version=...` set from the tag during release. Standard Go practice. Cost: a `go build` without the flag reports an empty or `dev` version.","2. **Embedded constant synchronized by AEOS-VER-001.** The constant joins the set of versions the validator keeps aligned. Cost: another place the version lives, though it would be enforced rather than trusted.","3. **`debug.ReadBuildInfo` from the module version.** No flags needed. Cost: reports `(devel)` for local builds, which is honest but unhelpful during development."],"blocks":"Nothing. Recorded as an open M6 gap in STATUS.","resolution":"Unresolved.","path":"docs/decisions/DEC-003.md"}],"STAGE-05-SECURITY":[{"id":"DEC-004","title":"Policy for Gitleaks False Positives in Documentation","status":"open","priority":"medium","question":"When project documentation legitimately trips a scanner rule, is the response always to reword?","why":"Writing about cryptography reliably trips `generic-api-key`. This has happened twice, both in documentation about the scanner itself. Rewording worked, but it constrains what the project can write about its own security.","options":["1. **Always reword (current).** No allowlist ever. Cost: some accurate technical prose cannot be written.","2. **Path-scoped allowlist for `docs/` only.** Source and configuration stay fully scanned. Cost: documentation becomes a place where a real secret could hide.","3. **Rule-scoped allowlist for `generic-api-key` in `docs/` only.** Narrowest option. Cost: still a hole, and the highest-recall rule is the one being narrowed."],"blocks":"Nothing yet. Each recurrence costs a rewrite.","resolution":"Unresolved. Option 1 stands until the cost of rewording exceeds the cost of a scoped hole.","path":"docs/decisions/DEC-004.md"}]};
 
 const NAMES = {
  "STAGE-01-INTAKE":"Intake","STAGE-02-DESIGN":"Design","STAGE-03-BUILD":"Build",
@@ -838,10 +863,13 @@ function makeWindow(key, {id, title, hue, width, height}){
         <button class="wb" data-a="close" aria-label="Close window" title="Close (nothing is lost)">×</button>
       </div>
     </div>
+    <div class="win-tabs" role="tablist"></div>
     <div class="win-body"></div>
     <div class="win-grip" title="Resize"></div>`;
 
-  const w = {el, key, collapsed:false, body: el.querySelector(".win-body")};
+  const w = {el, key, collapsed:false,
+             body: el.querySelector(".win-body"),
+             tabs: el.querySelector(".win-tabs")};
 
   // restore where this window was last placed, or cascade from the right
   const geo = store.get("geo." + key, null);
@@ -939,67 +967,125 @@ function recordMarkdown(id, notes){
 function renderNotes(w, id){
   const notes = loadNotes(id);
   const list = w.el.querySelector("[data-notes]");
-  const exp  = w.el.querySelector('[data-a="export"]');
-  const clr  = w.el.querySelector('[data-a="clear"]');
+  if(!list) return;
   list.innerHTML = notes.length
-    ? notes.map((n,i)=>`<div class="mem mine">
-        <p class="d">${esc(n.date)} · unsaved draft</p>
+    ? `<h3 style="font-size:8.5px;color:var(--gilt-dim);margin:0 0 9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase">Unsaved drafts · ${notes.length}</h3>` +
+      notes.map((n,i)=>`<div class="mem mine">
+        <p class="d">${esc(n.date)} · not in the record</p>
         <p class="t">${esc(n.title)}</p>
         <p class="b">${esc(n.body)}</p>
-        <button class="btn" data-del="${i}" style="margin-top:8px;padding:5px 10px">Remove</button>
+        <div class="cmt-row">
+          <button class="btn" data-push="${i}">Save this one</button>
+          <button class="btn" data-del="${i}">Remove</button>
+        </div>
       </div>`).join("")
-    : `<p style="font-size:12.5px;color:var(--marble-3);margin:0">No drafted comments for this stage.</p>`;
-  if(exp) exp.disabled = !notes.length;
-  if(clr) clr.disabled = !notes.length;
+    : "";
   list.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
     const next = loadNotes(id); next.splice(+b.dataset.del, 1);
     saveNotes(id, next); renderNotes(w, id);
   });
+  list.querySelectorAll("[data-push]").forEach(b => b.onclick = () => {
+    const n = loadNotes(id)[+b.dataset.push];
+    if(n) commitNote(w, id, n, +b.dataset.push);
+  });
 }
 
-function wireComments(w, id){
+function noteBlock(n){
+  return `### ${n.date} — ${n.title}\n${n.body}\n`;
+}
+
+/* Write a note into its record. With the server present this is a direct
+   append under ## Memory; without it, the clipboard. Either way the drafted
+   copy is only discarded once the write actually succeeded. */
+async function commitNote(w, id, note, index){
+  const said = w.el.querySelector("[data-said]");
+  const diffHost = w.el.querySelector("[data-diff]");
+  const path = w.recordPath;
+  const flash = m => { said.textContent = m; setTimeout(()=>{ if(said.textContent===m) said.textContent=""; }, 5200); };
+
+  if(!LIVE){
+    await copy(noteBlock(note), said, "Copied. Paste under ## Memory, then remove the draft.");
+    return;
+  }
+  try {
+    said.textContent = "Writing…";
+    const r = await api("/api/record/append", {path, heading:"Memory", block: noteBlock(note)});
+    if(typeof index === "number"){
+      const next = loadNotes(id); next.splice(index,1); saveNotes(id, next);
+    }
+    renderNotes(w, id);
+    showDiff(diffHost, r.diff);
+    flash(`Written to ${r.path}. Run aeos check, then commit.`);
+  } catch(e){
+    showDiff(diffHost, "");
+    flash("Refused: " + e.message);
+  }
+}
+
+function wireComments(w, id, path){
+  w.recordPath = path;
   const t = w.el.querySelector("[data-title]");
   const b = w.el.querySelector("[data-body]");
   const said = w.el.querySelector("[data-said]");
+  if(!t || !b) return;
 
   // half-written text is work too; it returns when the window does
   t.value = store.get("wip.t." + id, "");
   b.value = store.get("wip.b." + id, "");
   t.addEventListener("input", () => store.set("wip.t." + id, t.value));
   b.addEventListener("input", () => store.set("wip.b." + id, b.value));
-  const flash = m => { said.textContent = m; setTimeout(()=>{ said.textContent=""; }, 3200); };
 
-  w.el.querySelector('[data-a="add"]').onclick = () => {
+  w.el.querySelector('[data-a="add"]').onclick = async () => {
     const title = t.value.trim(), body = b.value.trim();
-    if(!body){ flash("A comment needs a body."); b.focus(); return; }
-    const next = loadNotes(id);
-    next.push({date: today(), title: title || "Note", body});
-    saveNotes(id, next);
-    t.value = ""; b.value = "";
-    store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
-    renderNotes(w, id);
-    flash("Drafted. Not in the record until you paste it there.");
-  };
-
-  w.el.querySelector('[data-a="export"]').onclick = async () => {
-    const md = recordMarkdown(id, loadNotes(id));
-    try { await navigator.clipboard.writeText(md); flash("Copied. Paste under ## Memory in the stage record."); }
-    catch { 
-      const ta = document.createElement("textarea");
-      ta.value = md; ta.style.cssText = "position:fixed;opacity:0";
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); flash("Copied. Paste under ## Memory in the stage record."); }
-      catch { flash("Copy failed — select the text manually."); }
-      ta.remove();
+    if(!body){ said.textContent = "A note needs a body."; b.focus(); return; }
+    const note = {date: today(), title: title || "Note", body};
+    if(LIVE){
+      await commitNote(w, id, note, null);
+      t.value = ""; b.value = "";
+      store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
+    } else {
+      const next = loadNotes(id); next.push(note); saveNotes(id, next);
+      t.value = ""; b.value = "";
+      store.set("wip.t." + id, ""); store.set("wip.b." + id, "");
+      renderNotes(w, id);
+      said.textContent = "Drafted. No server, so it is not in the record yet.";
+      setTimeout(()=>said.textContent="", 5200);
     }
   };
 
   w.el.querySelector('[data-a="clear"]').onclick = () => {
-    if(!confirm("Discard all drafted comments for this stage?")) return;
+    if(!loadNotes(id).length){ said.textContent = "No drafts to discard."; return; }
+    if(!confirm("Discard all unsaved drafts for this stage?")) return;
     saveNotes(id, []); renderNotes(w, id);
   };
 
   renderNotes(w, id);
+}
+
+/* ─────────── tabs ─────────── */
+/* Windows carried every section at once, which buried the decisions under
+   reference material. Each section is now a tab, and the one you were last
+   looking at is remembered per window. */
+function setTabs(w, key, defs){
+  w.tabs.innerHTML = defs.map(d =>
+    `<button class="tb" role="tab" data-tab="${d.id}" aria-selected="false">${esc(d.label)}${
+      d.badge ? `<span class="n">${d.badge}</span>` : ""}</button>`).join("");
+  w.body.innerHTML = defs.map(d =>
+    `<div class="pane" data-pane="${d.id}" role="tabpanel">${d.html}</div>`).join("");
+
+  const pick = id => {
+    w.tabs.querySelectorAll(".tb").forEach(b =>
+      b.setAttribute("aria-selected", String(b.dataset.tab === id)));
+    w.body.querySelectorAll(".pane").forEach(p =>
+      p.classList.toggle("on", p.dataset.pane === id));
+    w.body.scrollTop = 0;
+    store.set("tab." + key, id);
+  };
+  w.tabs.querySelectorAll(".tb").forEach(b => b.onclick = () => pick(b.dataset.tab));
+
+  const saved = store.get("tab." + key, null);
+  pick(defs.some(d => d.id === saved) ? saved : defs[0].id);
+  return pick;
 }
 
 /* ─────────── decisions ─────────── */
@@ -1022,46 +1108,78 @@ function renderDecision(d){
   const picked = loadPick(d.id);
   const opts = d.options.map((o,i)=>{
     const label = o.replace(/^\d+\.\s*/,"");
-    const mine = picked === String(i);
-    return `<button class="opt ${mine?"picked":""}" data-dec="${esc(d.id)}" data-opt="${i}">
+    return `<button class="opt ${picked===String(i)?"picked":""}" data-dec="${esc(d.id)}" data-opt="${i}">
       ${label.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</button>`;
   }).join("");
+
   return `<div class="dec ${settled?"settled":""}">
     <div class="dh"><span class="did">${esc(d.id)} \u00b7 ${esc(d.status)}${d.priority?" \u00b7 "+esc(d.priority):""}</span></div>
     <h4>${esc(d.title)}</h4>
     <p class="q">${esc(d.question)}</p>
     <p class="why">${esc(d.why)}</p>
-    ${opts}
     ${d.blocks && !/^nothing/i.test(d.blocks) ? `<p class="blocks">Blocks: ${esc(d.blocks)}</p>` : ""}
-    ${settled ? `<p class="why" style="margin:11px 0 0">${esc(d.resolution).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</p>` : ""}
-    <div class="cmt-row">
-      <button class="btn" data-a="dec-copy" data-dec="${esc(d.id)}">Copy resolution for record</button>
-    </div>
-    <p class="said" data-decsaid="${esc(d.id)}"></p>
+    ${settled
+      ? `<p class="why" style="margin:12px 0 0">${esc(d.resolution).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}</p>`
+      : `<div style="margin:12px 0 0">${opts}
+          <div style="display:${picked===""?"none":""};margin-top:10px">
+            <textarea class="cmt" data-why="${esc(d.id)}" style="min-height:62px"
+              placeholder="Why this option, and what it costs. This becomes the record."></textarea>
+          </div>
+          <div class="cmt-row">
+            <button class="btn primary" data-a="dec-resolve" data-dec="${esc(d.id)}"
+              data-savebtn="Resolve in record">Resolve in record</button>
+          </div>
+          <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
+          <p class="said" data-decsaid="${esc(d.id)}"></p>
+          <div data-decdiff="${esc(d.id)}"></div>`}
   </div>`;
 }
 
 function wireDecisions(w, stageId){
   const decs = DECISIONS[stageId] || [];
+
   w.el.querySelectorAll("[data-opt]").forEach(b => b.onclick = () => {
     const id = b.dataset.dec;
-    const cur = loadPick(id);
-    const next = cur === b.dataset.opt ? "" : b.dataset.opt;
+    const next = loadPick(id) === b.dataset.opt ? "" : b.dataset.opt;
     savePick(id, next);
     w.el.querySelectorAll(`[data-dec="${id}"][data-opt]`).forEach(x =>
       x.classList.toggle("picked", x.dataset.opt === next && next !== ""));
-    paintHud(); buildOrbs();
+    const why = w.el.querySelector(`[data-why="${id}"]`);
+    if(why) why.parentElement.style.display = next === "" ? "none" : "";
   });
 
-  w.el.querySelectorAll('[data-a="dec-copy"]').forEach(b => b.onclick = async () => {
-    const d = decs.find(x => x.id === b.dataset.dec);
+  w.el.querySelectorAll('[data-a="dec-resolve"]').forEach(btn => btn.onclick = async () => {
+    const d = decs.find(x => x.id === btn.dataset.dec);
     if(!d) return;
-    const pick = loadPick(d.id);
-    const chosen = pick === "" ? null : d.options[+pick];
     const said = w.el.querySelector(`[data-decsaid="${d.id}"]`);
-    if(!chosen){ said.textContent = "Choose an option first."; setTimeout(()=>said.textContent="",3200); return; }
-    const md = `status: accepted\nupdated: ${today()}\n\n## Resolution\n**Accepted ${today()}: ${chosen.replace(/\*\*/g,"").replace(/^\d+\.\s*/,"")}**\n\n<why this option, and what it costs>\n`;
-    await copy(md, said, `Copied. Paste into ${d.path} and set the status.`);
+    const diffHost = w.el.querySelector(`[data-decdiff="${d.id}"]`);
+    const flash = m => { said.textContent = m; setTimeout(()=>{ if(said.textContent===m) said.textContent=""; }, 5200); };
+
+    const pick = loadPick(d.id);
+    if(pick === ""){ flash("Choose an option first."); return; }
+    const why = (w.el.querySelector(`[data-why="${d.id}"]`)?.value || "").trim();
+    if(!why){ flash("Say why. A decision without its reasoning becomes folklore."); return; }
+
+    const chosen = d.options[+pick].replace(/\*\*/g,"").replace(/^\d+\.\s*/,"").split(".")[0];
+    const body = `**Accepted ${today()}: ${chosen}.**\n\n${why}`;
+
+    if(!LIVE){
+      await copy(`status: accepted\nupdated: ${today()}\n\n## Resolution\n${body}\n`, said,
+                 `Copied. Paste into ${d.path} and set the status.`);
+      return;
+    }
+    try {
+      said.textContent = "Writing…";
+      const r = await api("/api/decision/resolve",
+        {path: d.path, resolution: body, status: "accepted", date: today()});
+      showDiff(diffHost, r.diff);
+      d.status = "accepted"; d.resolution = body;
+      flash(`Resolved in ${r.path}. Re-run aeos check to refresh, then commit.`);
+      paintHud(); buildOrbs();
+    } catch(e){
+      showDiff(diffHost, "");
+      flash("Refused: " + e.message);
+    }
   });
 }
 
@@ -1134,52 +1252,108 @@ function wirePrompt(w, stageId){
   };
 }
 
+/* ─────────── write path ─────────── */
+/* When served by preview/serve.py, a note or resolution is written straight
+   into its record. Opened as a file there is no server, so the clipboard is
+   the fallback. The interface says which mode it is in rather than pretending
+   they are the same. */
+let LIVE = false;
+
+fetch("/api/ping", {cache:"no-store"})
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { LIVE = !!(d && d.ok); refreshSaveLines(); })
+  .catch(() => { LIVE = false; });
+
+function refreshSaveLines(){
+  document.querySelectorAll("[data-saveline]").forEach(el => {
+    el.classList.toggle("live", LIVE);
+    el.querySelector("[data-savetext]").textContent = LIVE
+      ? "Connected — saving writes directly to the record"
+      : "No server — saving copies to the clipboard instead";
+  });
+  document.querySelectorAll("[data-savebtn]").forEach(b => {
+    b.textContent = LIVE ? b.dataset.savebtn : "Copy for record";
+  });
+}
+
+async function api(route, payload){
+  const r = await fetch(route, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json().catch(() => ({ok:false, error:"bad response"}));
+  if(!d.ok) throw new Error(d.error || "write refused");
+  return d;
+}
+
+function showDiff(host, diff){
+  if(!host) return;
+  if(!diff){ host.innerHTML = ""; return; }
+  host.innerHTML = `<pre class="diff">` + diff.split("\n").slice(0,60).map(l => {
+    const c = l.startsWith("+") && !l.startsWith("+++") ? "a"
+            : l.startsWith("-") && !l.startsWith("---") ? "r" : "";
+    return c ? `<span class="${c}">${esc(l)}</span>` : esc(l);
+  }).join("\n") + `</pre>`;
+}
+
 /* ─────────── stage window ─────────── */
 function showStage(id){
   const s = STAGES[id];
   const skin = STAGE_SKIN[id] || FALLBACK_SKIN;
   const rec = (report.records||[]).find(r=>r.id===id);
   const isActive = id === activeStage;
+  const path = rec?.path || `docs/stages/${id}.md`;
   openStage = id;
 
   const w = makeWindow("stage:"+id, {
     id: id + (rec?.status ? " · " + rec.status : ""),
     title: NAMES[id] || id,
-    hue: skin.hue, width: 430, height: Math.min(640, innerHeight-140)
+    hue: skin.hue, width: 460, height: Math.min(620, innerHeight-140)
   });
 
-  let html = `<div class="blk" style="display:flex;align-items:center;gap:14px">
-      <canvas class="spGlyph" width="52" height="52" style="flex:none"></canvas>
-      <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
-    </div>`;
-
-  if(!s){
-    html += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
-  } else {
-    html += `<div class="blk"><h3>Purpose</h3><p>${esc(s.purpose)}</p></div>`;
-    if(s.principles?.length)
-      html += `<div class="blk"><h3>Principles</h3><ul>${s.principles.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ul></div>`;
-    if(s.protocol?.length)
-      html += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
-    if(s.gate?.length)
-      html += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-  }
-
-  // comments on the work at this stage
-  // decisions waiting at this gate
   const decs = DECISIONS[id] || [];
-  const openDecs = decs.filter(d => !SETTLED.has(d.status));
-  if(decs.length){
-    html += `<div class="blk"><h3>Decisions at this gate` +
-      (openDecs.length ? ` \u00b7 <span style="color:var(--amber)">${openDecs.length} awaiting a choice</span>` : " \u00b7 all settled") +
-      `</h3>` + decs.map(renderDecision).join("") + `</div>`;
-  }
+  const openN = decs.filter(d => !SETTLED.has(d.status)).length;
+  const rel = (report.findings||[]).filter(f =>
+    id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
 
-  // prompt composer
-  html += `<div class="blk"><h3>Compose a prompt for this stage</h3>
-      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 10px">
-        Your question, wrapped in this stage&rsquo;s protocol, exit gate, open decisions and current findings.
-        Nothing is sent anywhere \u2014 the brief is assembled here for you to paste wherever you want it answered.</p>
+  /* ── DECISIONS ── */
+  let decHtml = "";
+  if(decs.length){
+    decHtml += decs.map(renderDecision).join("");
+  } else {
+    decHtml += `<div class="blk"><p>No decisions are recorded against this gate.</p></div>`;
+  }
+  decHtml += `<div class="blk"><h3>Findings AEOS reports here</h3>` +
+    (rel.length
+      ? `<table>${rel.map(f=>`<tr><td class="k">${esc(f.severity)}</td><td>${esc(f.message)}</td></tr>`).join("")}</table>`
+      : `<p>None. AEOS has automated checks for the Security and Report gates only; the other six report unknown rather than passing.</p>`) +
+    `</div>`;
+
+  /* ── NOTES ── */
+  const notesHtml = `
+    <div class="blk">
+      <input class="cmt-t" data-title placeholder="Short title — what this is about">
+      <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
+      <div class="cmt-row">
+        <button class="btn primary" data-a="add" data-savebtn="Save to record">Save to record</button>
+        <button class="btn" data-a="clear">Discard drafts</button>
+      </div>
+      <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
+      <p class="said" data-said></p>
+      <div data-diff></div>
+      <div data-notes style="margin-top:16px"></div>
+    </div>
+    ${s?.memory?.length ? `<div class="blk"><h3>In the record · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
+      s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)}</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>` : ""}`;
+
+  /* ── ASK ── */
+  const askHtml = `
+    <div class="blk">
+      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 11px">
+        Your question, wrapped in this stage&rsquo;s purpose, principles, protocol, exit gate,
+        open decisions and current findings. Nothing is transmitted — the brief is assembled
+        here for you to take wherever you want it answered.</p>
       <textarea class="cmt" data-prompt placeholder="What do you want asked or done at this stage?"></textarea>
       <div class="cmt-row">
         <button class="btn primary" data-a="brief">Copy full brief</button>
@@ -1188,39 +1362,33 @@ function showStage(id){
       <p class="said" data-pmsg></p>
     </div>`;
 
-  html += `<div class="blk"><h3>Comments on this stage's work</h3>
-      <input class="cmt-t" data-title placeholder="Short title — what this is about">
-      <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
-      <div class="cmt-row">
-        <button class="btn primary" data-a="add">Add comment</button>
-        <button class="btn" data-a="export">Copy for record</button>
-        <button class="btn" data-a="clear">Discard all</button>
-      </div>
-      <p class="said" data-said></p>
-      <div data-notes style="margin-top:16px"></div>
-      <div class="note"><b>Closing this window loses nothing.</b>
-        Drafts, decision choices, half-written text and the window\u2019s own size and position
-        all return when you reopen it. Nothing here advances or halts the pipeline; the pipeline
-        moves when <code>aeos check</code> runs and when records change.</div>
-      <div class="note"><b>Drafts live in this browser only.</b>
-        They are not project state. AEOS records are the single home for notes —
-        use <em>Copy for record</em> and paste under <code>## Memory</code> in
-        <code>${esc(rec?.path || "the stage record")}</code>, then commit. Until then, nothing here is real.</div>
+  /* ── METHOD ── */
+  let methodHtml = `<div class="blk" style="display:flex;align-items:center;gap:14px">
+      <canvas class="spGlyph" width="52" height="52" style="flex:none"></canvas>
+      <span class="tag ${isActive?"on":"unk"}">${isActive?"Declared current stage":"Not the declared stage"}</span>
     </div>`;
+  if(!s){
+    methodHtml += `<div class="blk"><p>No stage record content is embedded for this identifier.</p></div>`;
+  } else {
+    methodHtml += `<div class="blk"><h3>Purpose</h3><p>${esc(s.purpose)}</p></div>`;
+    if(s.principles?.length)
+      methodHtml += `<div class="blk"><h3>Principles</h3><ul>${s.principles.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ul></div>`;
+    if(s.protocol?.length)
+      methodHtml += `<div class="blk"><h3>Protocol</h3><ol>${s.protocol.map(x=>`<li>${esc(x.replace(/^\d+\.\s*/,""))}</li>`).join("")}</ol></div>`;
+    if(s.gate?.length)
+      methodHtml += `<div class="blk"><h3>Exit Gate</h3><ul>${s.gate.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  }
+  methodHtml += `<div class="blk"><h3>Record</h3><p><code>${esc(path)}</code></p>
+    <p style="margin-top:9px;font-size:12.5px;color:var(--marble-3)">Edit this file to change how the stage operates. The interface renders it; it is not the source.</p></div>`;
 
-  if(s?.memory?.length)
-    html += `<div class="blk"><h3>Recorded memory · ${s.memory.length} entr${s.memory.length===1?"y":"ies"}</h3>` +
-      s.memory.map(m=>`<div class="mem"><p class="d">${esc(m.date)} · in record</p><p class="t">${esc(m.title)}</p><p class="b">${esc(m.body)}</p></div>`).join("") + `</div>`;
-
-  const rel = (report.findings||[]).filter(f =>
-    id==="STAGE-05-SECURITY" ? /SEC/.test(f.rule) : id==="STAGE-08-REPORT" ? /VER|DOC/.test(f.rule) : false);
-  html += `<div class="blk"><h3>Findings at this gate</h3>` +
-    (rel.length ? `<table>${rel.map(f=>`<tr><td class="k">${esc(f.severity)}</td><td>${esc(f.message)}</td></tr>`).join("")}</table>`
-                : `<p>None reported. AEOS surfaces findings for the Security and Report gates; the other six have no automated check yet, so their state is unknown rather than passing.</p>`) + `</div>`;
-
-  if(rec) html += `<div class="blk"><h3>Record</h3><p><code>${esc(rec.path)}</code></p></div>`;
-
-  w.body.innerHTML = html;
+  const defs = [
+    {id:"decisions", label:"Decisions", badge: openN || 0, html: decHtml},
+    {id:"notes",     label:"Notes",     html: notesHtml},
+    {id:"ask",       label:"Ask",       html: askHtml},
+    {id:"method",    label:"Method",    html: methodHtml}
+  ];
+  const pick = setTabs(w, "stage:"+id, defs);
+  if(openN && !store.get("tab.stage:"+id, null)) pick("decisions");
 
   const gc = w.el.querySelector(".spGlyph");
   if(gc && GLYPH[skin.glyph]){
@@ -1232,10 +1400,11 @@ function showStage(id){
     GLYPH[skin.glyph](c);
   }
 
-  wireComments(w, id);
+  wireComments(w, id, path);
   wireDecisions(w, id);
   wirePrompt(w, id);
-  if(openDecisionsFor(id).length) w.el.classList.add("needs");
+  refreshSaveLines();
+  if(openN) w.el.classList.add("needs");
 }
 
 /* ─────────── drop intake ─────────── */
