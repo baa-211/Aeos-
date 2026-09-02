@@ -16,6 +16,10 @@ Boundaries, and why they are where they are:
     the person makes deliberately, and the diff is returned first.
   * The validator is not invoked from here. AEOS output stays something the
     person runs, so the interface can never appear to certify its own edits.
+  * The model key is read from the environment at request time. It is never
+    written to disk, never returned to the browser, and never logged. The
+    browser talks only to this server; this server talks to the provider.
+    See DEC-006.
 """
 
 import http.server
@@ -27,12 +31,18 @@ import socketserver
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
 PORT = int(os.environ.get("AEOS_PREVIEW_PORT", "8000"))
 MAX_BODY = 256 * 1024
+
+MODEL = os.environ.get("AEOS_MODEL", "claude-sonnet-4-6")
+API_URL = "https://api.anthropic.com/v1/messages"
+MAX_CONTEXT_CHARS = 60_000
 
 
 class Rejected(Exception):
@@ -145,6 +155,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         route = urllib.parse.urlparse(self.path).path
         if route == "/api/ping":
             return self._send(200, {"ok": True, "root": os.path.basename(ROOT)})
+        if route == "/api/chat/status":
+            return self._send(200, {
+                "ok": True,
+                "available": bool(os.environ.get("ANTHROPIC_API_KEY")),
+                "model": MODEL,
+            })
         if route == "/api/git/status":
             st = git("status", "--porcelain")
             br = git("rev-parse", "--abbrev-ref", "HEAD")
@@ -165,6 +181,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self._resolve(data)
             if route == "/api/git/commit":
                 return self._commit(data)
+            if route == "/api/chat":
+                return self._chat(data)
             return self._send(404, {"ok": False, "error": "no such endpoint"})
         except Rejected as e:
             return self._send(400, {"ok": False, "error": str(e)})
@@ -200,6 +218,62 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         rel = os.path.relpath(path, ROOT)
         return self._send(200, {"ok": True, "path": rel, "diff": diff_for([rel])})
 
+    def _chat(self, d):
+        """Forward a conversation to the provider.
+
+        The reply is returned verbatim as untrusted content. Nothing here
+        writes to a record, touches git, or invokes the validator: a model
+        cannot move this project's state, only propose text a person accepts.
+        """
+        key = os.environ.get("ANTHROPIC_API_KEY")
+        if not key:
+            raise Rejected("no ANTHROPIC_API_KEY in the environment; "
+                           "export it before starting the server")
+
+        messages = d.get("messages") or []
+        if not isinstance(messages, list) or not messages:
+            raise Rejected("no messages given")
+        for m in messages:
+            if not isinstance(m, dict) or m.get("role") not in ("user", "assistant"):
+                raise Rejected("malformed message")
+            if not isinstance(m.get("content"), str):
+                raise Rejected("malformed message content")
+
+        system = d.get("system") or ""
+        size = len(system) + sum(len(m["content"]) for m in messages)
+        if size > MAX_CONTEXT_CHARS:
+            raise Rejected(f"conversation too large ({size} characters)")
+
+        payload = json.dumps({
+            "model": MODEL,
+            "max_tokens": 2048,
+            "system": system,
+            "messages": [{"role": m["role"], "content": m["content"]} for m in messages],
+        }).encode()
+
+        req = urllib.request.Request(API_URL, data=payload, method="POST", headers={
+            "content-type": "application/json",
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                body = json.load(r)
+        except urllib.error.HTTPError as e:
+            detail = ""
+            try:
+                detail = json.load(e).get("error", {}).get("message", "")
+            except Exception:
+                pass
+            # never echo the key back, whatever the provider said
+            raise Rejected(f"provider returned {e.code}: {detail or 'request refused'}")
+        except urllib.error.URLError as e:
+            raise Rejected(f"could not reach the provider: {e.reason}")
+
+        text = "".join(b.get("text", "") for b in body.get("content", [])
+                       if b.get("type") == "text")
+        return self._send(200, {"ok": True, "reply": text, "model": body.get("model", MODEL)})
+
     def _commit(self, d):
         paths = d.get("paths") or []
         message = (d.get("message") or "").strip()
@@ -230,6 +304,10 @@ def main():
         print(f"AEOS preview  →  http://localhost:{PORT}/preview/command.html")
         print(f"repository    →  {ROOT}")
         print("writes are confined to existing Markdown records under docs/")
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            print(f"chat          →  enabled ({MODEL})")
+        else:
+            print("chat          →  off (export ANTHROPIC_API_KEY to enable)")
         print("Ctrl-C to stop.\n")
         try:
             httpd.serve_forever()

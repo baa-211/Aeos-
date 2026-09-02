@@ -1,7 +1,7 @@
 ---
 aeos_record: STATUS
 updated: 2026-09-01
-version: "0.0.17"
+version: "0.0.18"
 environment: development
 ---
 
@@ -56,6 +56,13 @@ When the target is a Git repository, secret scanning uses both current-directory
 
 ## Priority
 Preserve the M5→M8 trust-engine critical path while allowing the new Preview/UI direction to prototype in an isolated, non-authoritative track that consumes the same AEOS truth model.
+
+## Engine and Subject
+AEOS operates on a subject: an application, a website, a service. AEOS itself is the engine. See `ADR-005`.
+
+During M6 and M7 the engine is pointed at itself, so every stage record, decision record and change entry in this repository is the engine reasoning about its own construction. **That content is placeholder.** It is not a work product, and it is not an example of what a user's project should contain. When AEOS is pointed at a real subject, that subject supplies its own records and none of these appear.
+
+M8 is the point at which AEOS is expected to be examining something other than itself. The command interface declares self-examination rather than hiding it, so the temporary condition is visible while it lasts.
 
 ## Preview/UI Direction
 A user-facing local preview is now a deliberate product direction. It must not duplicate validation logic, introduce hidden project state, or become a second source of truth. Main visual/product requirements live in the handoff bundle outside this canonical source snapshot until formally recorded.

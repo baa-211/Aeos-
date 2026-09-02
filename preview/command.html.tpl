@@ -123,6 +123,29 @@ td.k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.1em;
   font-size:12.5px;line-height:1.75;color:var(--marble-2);margin:16px 0 0}
 .note b{color:var(--marble);font-weight:500}
 
+/* ── conversation ── */
+.thread{display:flex;flex-direction:column;gap:11px;margin:0 0 14px;max-height:44vh;overflow-y:auto}
+.thread::-webkit-scrollbar{width:5px}
+.thread::-webkit-scrollbar-thumb{background:var(--gilt-dim)}
+.msg{max-width:93%;padding:11px 14px;font-size:13px;line-height:1.72;white-space:pre-wrap;word-break:break-word}
+.msg.me{align-self:flex-end;background:rgba(201,162,39,.11);border:1px solid var(--edge);color:var(--marble)}
+.msg.them{align-self:flex-start;background:rgba(0,0,0,.3);border:1px solid var(--edge-2);color:var(--marble-2)}
+.msg .who{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--marble-3);margin:0 0 6px;display:block}
+.msg.pending{opacity:.6;font-style:italic}
+.msg .acts{display:flex;gap:6px;margin:10px 0 0}
+.msg .acts .btn{padding:5px 10px;font-size:8px}
+.composer{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;min-height:58px;max-height:180px}
+.send{flex:none;border:1px solid var(--gilt-dim);background:none;color:var(--gilt-lit);
+  font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:0 16px;height:58px;cursor:pointer}
+.send:hover{background:rgba(201,162,39,.12)}
+.send:focus-visible{outline:2px solid var(--gilt);outline-offset:2px}
+.send[disabled]{opacity:.4;cursor:not-allowed}
+.leaves{font-family:"IBM Plex Mono",monospace;font-size:8px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--marble-3);margin:10px 0 0;line-height:1.75}
+
 /* ── dock ── */
 #dock{position:fixed;right:22px;bottom:22px;z-index:7;display:flex;flex-direction:column;gap:7px}
 .dk{display:flex;align-items:center;gap:9px;background:rgba(20,17,14,.82);
@@ -285,6 +308,8 @@ input.cmt-t:focus{outline:none;border-color:var(--gilt)}
 <div class="hud mono" id="tl">
   <p class="st"><span class="pip unk" id="pipResult"></span>Result <b id="vResult">unknown</b></p>
   <p class="st"><span class="pip unk" id="pipStage"></span>Stage <b id="vStage">unknown</b></p>
+  <p class="st"><span class="pip unk"></span>Subject <b id="vSubject">unknown</b></p>
+  <p class="st" id="selfMark" hidden><span class="pip warn"></span>Examining <b>itself</b></p>
   <p class="st"><span class="pip unk"></span>Version <b id="vVersion">unknown</b></p>
   <p class="st" id="decLine"><span class="pip unk" id="pipDec"></span>Decisions <b id="vDec">—</b></p>
 </div>
@@ -402,6 +427,13 @@ function paintHud(){
   $("vSchema").textContent = report.schema_version || "—";
   const openN = totalOpenDecisions();
   $("vDec").textContent = openN ? `${openN} awaiting` : "none open";
+  const sub = $("vSubject");
+  if(sub){
+    sub.textContent = subjectName();
+    sub.title = isSelf() ? "AEOS is examining itself — dogfooding" : "";
+  }
+  const selfMark = $("selfMark");
+  if(selfMark) selfMark.hidden = !isSelf();
   $("pipDec").className = "pip " + (openN ? "warn" : "ok");
 }
 
@@ -1260,8 +1292,10 @@ function buildBrief(stageId, question){
   L.push(`Check result: ${report.result||"UNKNOWN"} \u2014 ${report.summary?.critical??"?"} critical, ${report.summary?.errors??"?"} errors, ${report.summary?.warnings??"?"} warnings`);
   if(rec) L.push(`Stage record: ${rec.path}`);
   L.push(``);
-  L.push(`## Question`);
-  L.push(question || "(none given)");
+  if(question !== null){
+    L.push(`## Question`);
+    L.push(question || "(none given)");
+  }
   if(s){
     L.push(``, `## This stage's purpose`, s.purpose);
     if(s.principles?.length) L.push(``, `## Principles that constrain the answer`,
@@ -1282,22 +1316,138 @@ function buildBrief(stageId, question){
   L.push(rel.length ? rel.map(f=>`- ${f.severity} ${f.rule}: ${f.message}`).join("\n")
     : "None. AEOS has automated checks for the Security and Report gates only; the other six report unknown rather than passing.");
   L.push(``, `---`, `Assembled from AEOS report schema ${report.schema_version||"?"}. Nothing here was inferred by the interface.`);
+  if(question === null){
+    L.push(``, `You are answering questions about this stage of this project.`,
+      `Work within the principles and exit gate above. Say plainly when something is unknown rather than filling the gap.`,
+      `You cannot change any record, status or finding. The person decides what is written.`);
+  }
   return L.join("\n");
+}
+
+/* DEC-006. The browser never holds the credential: it posts to
+   preview/serve.py, which reads the key from its own environment. A reply is
+   untrusted text shown in the session. It becomes a record only by pressing
+   save, through the same path a hand-typed note takes. */
+let CHAT = false;
+
+function refreshChat(){
+  document.querySelectorAll("[data-chatline]").forEach(el => {
+    el.classList.toggle("live", CHAT);
+    el.querySelector("[data-chattext]").textContent = CHAT
+      ? "Connected — Enter sends"
+      : LIVE ? "No key set on the server — set one and restart it"
+             : "No server running — use Copy with context instead";
+  });
+  document.querySelectorAll(".send").forEach(b => b.disabled = !CHAT);
+}
+
+fetch("/api/chat/status", {cache:"no-store"})
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { CHAT = !!(d && d.available); refreshChat(); })
+  .catch(() => { CHAT = false; refreshChat(); });
+
+const thread = {
+  get: id => store.get("chat." + id, []),
+  set: (id, m) => store.set("chat." + id, m.slice(-40))
+};
+
+function renderThread(w, stageId){
+  const host = w.el.querySelector("[data-thread]");
+  if(!host) return;
+  const msgs = thread.get(stageId);
+  host.innerHTML = msgs.length
+    ? msgs.map((m,i) => `<div class="msg ${m.role === "user" ? "me" : "them"}">
+        <span class="who">${m.role === "user" ? "You" : "Reply"}</span>${esc(m.content)}
+        ${m.role === "assistant" ? `<div class="acts">
+          <button class="btn" data-keep="${i}">Save as note</button></div>` : ""}
+      </div>`).join("")
+    : `<p style="font-size:12.5px;color:var(--marble-3);margin:0">No conversation yet for this stage.</p>`;
+
+  host.querySelectorAll("[data-keep]").forEach(b => b.onclick = () => {
+    const m = thread.get(stageId)[+b.dataset.keep];
+    if(!m) return;
+    const t = w.el.querySelector("[data-title]");
+    const body = w.el.querySelector("[data-body]");
+    if(t && body){
+      t.value = "From a conversation at this stage";
+      body.value = m.content;
+      store.set("wip.t." + stageId, t.value);
+      store.set("wip.b." + stageId, body.value);
+    }
+    if(w.pickTab) w.pickTab("notes");
+    const said = w.el.querySelector("[data-said]");
+    if(said){
+      said.textContent = "Moved to Notes. Read it, then save it to the record.";
+      setTimeout(() => { said.textContent = ""; }, 6000);
+    }
+  });
+  host.scrollTop = host.scrollHeight;
 }
 
 function wirePrompt(w, stageId){
   const ta = w.el.querySelector("[data-prompt]");
   const said = w.el.querySelector("[data-pmsg]");
+  if(!ta) return;
   ta.value = store.get("wip.p." + stageId, "");
   ta.addEventListener("input", () => store.set("wip.p." + stageId, ta.value));
-  w.el.querySelector('[data-a="brief"]').onclick = () => {
-    if(!ta.value.trim()){
-      said.textContent = "Write a question first.";
-      setTimeout(()=>{ said.textContent=""; }, 3200);
-      return;
+
+  const flash = m => {
+    said.textContent = m;
+    setTimeout(() => { if(said.textContent === m) said.textContent = ""; }, 6000);
+  };
+
+  async function send(){
+    const q = ta.value.trim();
+    if(!q){ flash("Write something first."); return; }
+    if(!CHAT){ flash("Chat is unavailable. Use Copy with context."); return; }
+
+    const msgs = thread.get(stageId);
+    msgs.push({role:"user", content:q});
+    thread.set(stageId, msgs);
+    ta.value = ""; store.set("wip.p." + stageId, "");
+    renderThread(w, stageId);
+
+    const host = w.el.querySelector("[data-thread]");
+    const wait = document.createElement("div");
+    wait.className = "msg them pending";
+    wait.innerHTML = `<span class="who">Reply</span>Thinking`;
+    host.appendChild(wait);
+    host.scrollTop = host.scrollHeight;
+
+    try {
+      const d = await api("/api/chat", {
+        system: buildBrief(stageId, null),
+        messages: thread.get(stageId).map(m => ({role:m.role, content:m.content}))
+      });
+      const next = thread.get(stageId);
+      next.push({role:"assistant", content: d.reply || "(empty reply)"});
+      thread.set(stageId, next);
+      renderThread(w, stageId);
+    } catch(e){
+      wait.remove();
+      flash("Refused: " + e.message);
     }
+  }
+
+  w.el.querySelector('[data-a="send"]').onclick = send;
+  ta.addEventListener("keydown", e => {
+    if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+
+  w.el.querySelector('[data-a="brief"]').onclick = () => {
+    if(!ta.value.trim()){ flash("Write a question first."); return; }
     copy(buildBrief(stageId, ta.value.trim()), said, "Copied with the stage's context attached.");
   };
+
+  w.el.querySelector('[data-a="thread-clear"]').onclick = () => {
+    if(!thread.get(stageId).length){ flash("Nothing to clear."); return; }
+    if(!confirm("Clear this stage's conversation? Saved notes are untouched.")) return;
+    thread.set(stageId, []);
+    renderThread(w, stageId);
+  };
+
+  renderThread(w, stageId);
+  refreshChat();
 }
 
 /* ─────────── write path ─────────── */
@@ -1399,15 +1549,21 @@ function showStage(id){
   /* ── ASK ── */
   const askHtml = `
     <div class="blk">
-      <p style="font-size:12.5px;color:var(--marble-3);margin:0 0 11px">
-        Your question, wrapped in this stage&rsquo;s purpose, principles, protocol, exit gate,
-        open decisions and current findings. Nothing is transmitted — the brief is assembled
-        here for you to take wherever you want it answered.</p>
-      <textarea class="cmt" data-prompt placeholder="What do you want asked or done at this stage?"></textarea>
-      <div class="cmt-row">
-        <button class="btn primary" data-a="brief">Copy with context</button>
+      <div class="thread" data-thread></div>
+      <div class="composer">
+        <textarea class="cmt" data-prompt
+          placeholder="Ask about this stage. Enter sends, Shift and Enter for a new line."></textarea>
+        <button class="send" data-a="send">Send</button>
       </div>
+      <p class="saveline" data-chatline><span class="dotm"></span><span data-chattext>Checking</span></p>
       <p class="said" data-pmsg></p>
+      <div class="cmt-row">
+        <button class="btn" data-a="brief">Copy with context</button>
+        <button class="btn" data-a="thread-clear">Clear conversation</button>
+      </div>
+      <p class="leaves">Every message carries this stage&rsquo;s purpose, principles, protocol,
+        exit gate, open decisions and current findings. That content leaves your machine.
+        Replies are drafts. Nothing is recorded until you save it as a note.</p>
     </div>`;
 
   /* ── METHOD ── */
@@ -1436,6 +1592,7 @@ function showStage(id){
     {id:"method",    label:"Method",    html: methodHtml}
   ];
   const pick = setTabs(w, "stage:"+id, defs);
+  w.pickTab = pick;
   if(openN && !store.get("tab.stage:"+id, null)) pick("decisions");
 
   const gc = w.el.querySelector(".spGlyph");
@@ -1452,6 +1609,7 @@ function showStage(id){
   wireDecisions(w, id);
   wirePrompt(w, id);
   refreshSaveLines();
+  refreshChat();
   if(openN) w.el.classList.add("needs");
 }
 
@@ -1531,6 +1689,18 @@ const ledger = {
   clear(){ store.set("intake.ledger", []); paintDock(); }
 };
 
+/* ADR-005. AEOS operates on a subject. When the subject is AEOS itself the
+   interface says so, because its own stage and decision records are
+   scaffolding rather than anything a user's project produced. */
+const subjectName = () => (report.project && report.project.name) || "this project";
+const isSelf = () => (report.project && report.project.id) === "AEOS-CLI";
+
+const selfNote = `<div class="gap"><b>AEOS is currently examining itself.</b>
+  The records below are the engine's own scaffolding from building AEOS, not a work
+  product and not an example of what your project should contain. When AEOS is pointed
+  at an application or a website, that project supplies its own records and these
+  disappear. This is dogfooding, and it ends at release.</div>`;
+
 function paintDock(){
   const n = ledger.all().length;
   $("dkIntakeN").textContent = n;
@@ -1542,7 +1712,7 @@ function paintDock(){
 
 function showIntake(){
   const w = makeWindow("ledger:intake", {
-    id: "Stage 01 · Intake", title: "What has been presented",
+    id: "Stage 01 · Intake", title: `Presented to ${subjectName()}`,
     hue: STAGE_SKIN["STAGE-01-INTAKE"].hue,
     width: 520, height: Math.min(600, innerHeight-140)
   });
@@ -1580,9 +1750,10 @@ function showIntake(){
       <div><p class="v">${held.length}</p><p class="l">Records held</p></div>
       <div><p class="v">${new Set(held.map(r=>r.type)).size}</p><p class="l">Types</p></div>
     </div>
-    <div class="gap"><b>This is what the engine actually has.</b>
-      Every item was discovered in the repository by <code>aeos check</code>, indexed, and
+    <div class="gap"><b>This is what AEOS holds for ${esc(subjectName())}.</b>
+      Every item was discovered in that project by <code>aeos check</code>, indexed, and
       reference-checked. Nothing here came from a drop.</div>
+    ${isSelf() ? selfNote : ""}
     ${Object.entries(held.reduce((a,r)=>((a[r.type] ||= []).push(r), a), {}))
       .map(([type, rs]) => `<div class="blk"><h3>${esc(type)} · ${rs.length}</h3>` +
         rs.map(r => `<div class="led held"><div class="ln">
@@ -1607,7 +1778,7 @@ function showIntake(){
    come from git, so nothing here is the interface's own account of itself. */
 function showOutput(){
   const w = makeWindow("ledger:output", {
-    id: "Stage 08 · Report & Documentation", title: "What the engine produced",
+    id: "Stage 08 · Report & Documentation", title: `Produced for ${subjectName()}`,
     hue: STAGE_SKIN["STAGE-08-REPORT"].hue,
     width: 520, height: Math.min(600, innerHeight-140)
   });
@@ -1619,9 +1790,10 @@ function showOutput(){
       <div><p class="v">${(report.findings||[]).length}</p><p class="l">Findings</p></div>
       <div><p class="v">${report.result === "PASS" ? "PASS" : report.result || "—"}</p><p class="l">Result</p></div>
     </div>
+    ${isSelf() ? selfNote : ""}
     <div class="led new"><div class="ln">
       <p class="nm">preview/report.json</p>
-      <p class="kind">The deterministic report. Every number in this interface is read from it.</p>
+      <p class="kind">AEOS produced this about ${esc(subjectName())}. Every number in this interface is read from it.</p>
       <p class="mt">schema ${esc(report.schema_version || "?")} · ${esc(report.manifest_path || "aeos.yaml")}</p></div></div>
     ${(report.findings||[]).length ? `<div class="blk"><h3>Findings carried in it</h3>` +
       (report.findings||[]).map(f=>`<div class="led ${f.severity==="CRITICAL"||f.severity==="ERROR"?"risk":"ref"}">
@@ -1655,8 +1827,8 @@ function showOutput(){
         <div><p class="v" style="font-size:15px">${esc(d.branch)}</p><p class="l">Branch</p></div>
       </div>
       ${d.dirty.length
-        ? `<div class="gap">Written but not yet committed. Everything the interface wrote lands
-             here first, so nothing reaches history without you committing it.</div>` +
+        ? `<div class="gap">Changed in ${esc(subjectName())} but not yet committed. Everything the
+             interface writes lands here first, so nothing reaches history without you committing it.</div>` +
           d.dirty.map(f=>`<div class="led new"><div class="ln"><p class="nm">${esc(f)}</p>
             <p class="mt">changed · uncommitted</p></div></div>`).join("")
         : `<div class="gap">Nothing uncommitted. The working tree matches the last commit

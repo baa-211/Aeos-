@@ -4,6 +4,25 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.18] — 2026-09-01
+
+Milestone: M6 (Dogfood) in progress.
+
+### Added
+- **A conversation in the Ask tab.** Type, press Enter, get a reply. The thread persists per stage. `DEC-006` records the decision and its conditions.
+- **Save as note** on any reply, which moves it into the Notes tab for you to read before it is written to the record. A reply never reaches a record on its own.
+
+### Changed
+- The Ask tab no longer hands your own words back on the clipboard. "Copy with context" remains for when there is no key or no server.
+
+### Changed
+- **The interface describes the subject, not itself** (`ADR-005`). AEOS operates on a project; windows are now named for that project rather than for "the engine". When the subject is AEOS itself the interface says so plainly, states that its own records are scaffolding rather than a work product, and that the condition ends at release.
+
+### Security
+- The credential is read from the environment by `preview/serve.py` at request time. It is never sent to the browser, written to the repository, or logged; provider errors are relayed without echoing it. Verified: no key or auth header appears anywhere in the browser bundle.
+- The Go validator is untouched. It calls nothing, gains nothing, and produces identical output whether a key exists or not.
+- Every refusal path was exercised: no key, empty messages, malformed roles, oversized context, and an invalid credential.
+
 ## [0.0.17] — 2026-09-01
 
 Milestone: M6 (Dogfood) in progress.
