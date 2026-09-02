@@ -4,6 +4,19 @@ Human-readable release history. The authoritative version is `project.version` i
 
 `0.1.0` is reserved for the M8 release and will not be claimed before real pilot evidence exists.
 
+## [0.0.16] — 2026-09-01
+
+Milestone: M6 (Dogfood) in progress.
+
+### Removed
+- **"Copy question only".** It copied back the exact text the person had just typed, from a box they could select. It existed because it was easy to add, not because anyone needed it.
+
+### Changed
+- **"Copy full brief" → "Copy with context".** The old name described a size. The new one names the reason to press it — the question leaves with the stage's purpose, principles, protocol, exit gate, open decisions and current findings attached.
+- **"Copy for record" is gone as a label.** One generic fallback string had been applied to two different buttons. Each control now names its own action in both modes: Save to record / Copy entry, and Resolve in record / Copy resolution.
+- **"Discard drafts" is hidden when there is nothing to discard.** With the server running, saving writes straight through and no draft is ever created, so the button was permanently dead.
+- The mode line now says what the button will do rather than describing the connection.
+
 ## [0.0.15] — 2026-09-01
 
 Milestone: M6 (Dogfood) in progress.

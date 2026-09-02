@@ -968,6 +968,8 @@ function renderNotes(w, id){
   const notes = loadNotes(id);
   const list = w.el.querySelector("[data-notes]");
   if(!list) return;
+  const clearBtn = w.el.querySelector("[data-clearbtn]");
+  if(clearBtn) clearBtn.hidden = notes.length === 0;
   list.innerHTML = notes.length
     ? `<h3 style="font-size:8.5px;color:var(--gilt-dim);margin:0 0 9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase">Unsaved drafts · ${notes.length}</h3>` +
       notes.map((n,i)=>`<div class="mem mine">
@@ -975,7 +977,7 @@ function renderNotes(w, id){
         <p class="t">${esc(n.title)}</p>
         <p class="b">${esc(n.body)}</p>
         <div class="cmt-row">
-          <button class="btn" data-push="${i}">Save this one</button>
+          <button class="btn" data-push="${i}" data-savebtn="Save to record" data-offbtn="Copy entry">Copy entry</button>
           <button class="btn" data-del="${i}">Remove</button>
         </div>
       </div>`).join("")
@@ -988,6 +990,7 @@ function renderNotes(w, id){
     const n = loadNotes(id)[+b.dataset.push];
     if(n) commitNote(w, id, n, +b.dataset.push);
   });
+  refreshSaveLines();
 }
 
 function noteBlock(n){
@@ -1127,7 +1130,7 @@ function renderDecision(d){
           </div>
           <div class="cmt-row">
             <button class="btn primary" data-a="dec-resolve" data-dec="${esc(d.id)}"
-              data-savebtn="Resolve in record">Resolve in record</button>
+              data-savebtn="Resolve in record" data-offbtn="Copy resolution">Resolve in record</button>
           </div>
           <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
           <p class="said" data-decsaid="${esc(d.id)}"></p>
@@ -1244,11 +1247,13 @@ function wirePrompt(w, stageId){
   const said = w.el.querySelector("[data-pmsg]");
   ta.value = store.get("wip.p." + stageId, "");
   ta.addEventListener("input", () => store.set("wip.p." + stageId, ta.value));
-  w.el.querySelector('[data-a="brief"]').onclick = () =>
-    copy(buildBrief(stageId, ta.value.trim()), said, "Full brief copied.");
-  w.el.querySelector('[data-a="brief-short"]').onclick = () => {
-    if(!ta.value.trim()){ said.textContent="Write a question first."; setTimeout(()=>said.textContent="",3200); return; }
-    copy(ta.value.trim(), said, "Question copied.");
+  w.el.querySelector('[data-a="brief"]').onclick = () => {
+    if(!ta.value.trim()){
+      said.textContent = "Write a question first.";
+      setTimeout(()=>{ said.textContent=""; }, 3200);
+      return;
+    }
+    copy(buildBrief(stageId, ta.value.trim()), said, "Copied with the stage's context attached.");
   };
 }
 
@@ -1268,11 +1273,11 @@ function refreshSaveLines(){
   document.querySelectorAll("[data-saveline]").forEach(el => {
     el.classList.toggle("live", LIVE);
     el.querySelector("[data-savetext]").textContent = LIVE
-      ? "Connected — saving writes directly to the record"
-      : "No server — saving copies to the clipboard instead";
+      ? "Writes straight into the record file"
+      : "No server running — copies to the clipboard for you to paste";
   });
   document.querySelectorAll("[data-savebtn]").forEach(b => {
-    b.textContent = LIVE ? b.dataset.savebtn : "Copy for record";
+    b.textContent = LIVE ? b.dataset.savebtn : (b.dataset.offbtn || b.dataset.savebtn);
   });
 }
 
@@ -1336,8 +1341,9 @@ function showStage(id){
       <input class="cmt-t" data-title placeholder="Short title — what this is about">
       <textarea class="cmt" data-body placeholder="What happened, what you decided, what is still unknown."></textarea>
       <div class="cmt-row">
-        <button class="btn primary" data-a="add" data-savebtn="Save to record">Save to record</button>
-        <button class="btn" data-a="clear">Discard drafts</button>
+        <button class="btn primary" data-a="add"
+          data-savebtn="Save to record" data-offbtn="Copy entry">Save to record</button>
+        <button class="btn" data-a="clear" data-clearbtn hidden>Discard all drafts</button>
       </div>
       <p class="saveline" data-saveline><span class="dotm"></span><span data-savetext>Checking…</span></p>
       <p class="said" data-said></p>
@@ -1356,8 +1362,7 @@ function showStage(id){
         here for you to take wherever you want it answered.</p>
       <textarea class="cmt" data-prompt placeholder="What do you want asked or done at this stage?"></textarea>
       <div class="cmt-row">
-        <button class="btn primary" data-a="brief">Copy full brief</button>
-        <button class="btn" data-a="brief-short">Copy question only</button>
+        <button class="btn primary" data-a="brief">Copy with context</button>
       </div>
       <p class="said" data-pmsg></p>
     </div>`;
